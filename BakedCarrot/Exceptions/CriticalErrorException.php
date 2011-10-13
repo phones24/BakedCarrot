@@ -1,0 +1,6 @@
+<?
+	class CriticalErrorException extends Exception
+	{
+	
+	}
+?>

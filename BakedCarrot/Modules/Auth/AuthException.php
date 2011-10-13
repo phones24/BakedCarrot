@@ -1,0 +1,6 @@
+<?
+	class AuthException extends Exception
+	{
+	
+	}
+?>

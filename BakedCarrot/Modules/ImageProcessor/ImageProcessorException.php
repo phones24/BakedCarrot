@@ -1,0 +1,6 @@
+<?
+	class ImageProcessorException extends Exception
+	{
+	
+	}
+?>

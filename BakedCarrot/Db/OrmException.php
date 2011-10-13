@@ -1,0 +1,6 @@
+<?
+class OrmException extends Exception
+{
+
+}
+?>

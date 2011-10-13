@@ -1,0 +1,6 @@
+<?
+	class FilelibException extends Exception
+	{
+	
+	}
+?>
