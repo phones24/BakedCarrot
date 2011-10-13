@@ -1,4 +1,16 @@
 <?
+/**
+ * BakedCarrot file library module
+ *
+ * @package BakedCarrot
+ * @subpackage Auth
+ * @author Yury Vasiliev
+ * @version 0.3
+ *
+ *
+ * 
+ */
+
 require 'FilelibException.php';
 
 // TODO: make a base class. 
