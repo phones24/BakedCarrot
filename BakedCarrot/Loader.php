@@ -1,13 +1,12 @@
 <?
 /**
- * BakedCarrot Loader class
+ * Loader 
+ *
  * Takes care of controllers loading
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- * 
- *
- *
+ * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  * 
  */
 class Loader
@@ -94,6 +93,12 @@ class Loader
 	}
 	
 	
+	/**
+	 * Return class name generated from controller's name
+	 *
+	 * @param $handler controller
+	 * @return string
+	 */
 	private static function getClassNameByController($handler)
 	{
 		$class_name = str_replace(array("/", "\\", '_'), ' ', $handler);

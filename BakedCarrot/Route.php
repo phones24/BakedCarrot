@@ -1,4 +1,14 @@
-<?
+<?php
+/**
+ * Route
+ *
+ * Represents route object
+ *
+ * @package BakedCarrot
+ * @author Yury Vasiliev
+ * @license MIT License (http://www.opensource.org/licenses/mit-license.php) 
+ * 
+ */
 class Route
 {
 	private $params = array();
@@ -102,4 +112,3 @@ class Route
 	}
 }	
 
-?>

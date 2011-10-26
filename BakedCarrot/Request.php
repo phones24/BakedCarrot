@@ -1,11 +1,12 @@
-<?
+<?php
 /**
- * BakedCarrot Request
+ * Request
+ *
+ * Request handling class
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- *
- *
+ * @license MIT License (http://www.opensource.org/licenses/mit-license.php) 
  * 
  */
  
@@ -109,15 +110,6 @@ class Request
 			}
 			
 			self::$uri = '/' . ltrim($uri, '/');
-/*			
-			if($remove_prefix && Config::checkVar('app_uri_prefix')) {
-				$uri = @preg_replace('#^' . Config::getVar('app_uri_prefix') . '#', '', $uri);
-				
-				if($uri === null) {
-					throw new RuntimeException('Invalid app_uri_prefix parameter');
-				}
-			}
-*/			
 		}
 		
 		return self::$uri;
@@ -180,4 +172,3 @@ class Request
 
 
 }	
-?>

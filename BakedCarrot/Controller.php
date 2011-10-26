@@ -1,4 +1,14 @@
 <?
+/**
+ * Base controller class
+ *
+ * Provides basic error handling that helps passing messages between requests
+ *
+ * @package BakedCarrot
+ * @author Yury Vasiliev
+ * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
+ *
+ */
 class Controller
 {
 	protected $errors = null;

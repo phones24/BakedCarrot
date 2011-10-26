@@ -5,9 +5,7 @@
  * @package BakedCarrot
  * @author Yury Vasiliev
  * @version 0.3
- *
- *
- * 
+ * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
 // version of library
