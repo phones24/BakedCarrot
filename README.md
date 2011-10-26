@@ -44,12 +44,12 @@ That's it!
 
 Change these constants in `index.php`:
 	
-	DOCROOT - document root
-	SYSPATH - path to system files
-	APPPATH - path to application files
-	TMPPATH - path to temporary files storage, usually used for template cache
+* `DOCROOT` - document root
+* `SYSPATH` - path to system files
+* `APPPATH` - path to application files
+* `TMPPATH` - path to temporary files storage, usually used for template cache
 	
-If you want your application in `Application` directory, instead of `app`, then `APPPATH` should be looking like this:
+For example, if you want your application in `Application` directory, instead of `app`, then `APPPATH` should be looking like this:
 
 	define('APPPATH', DOCROOT . 'Application' . DIRECTORY_SEPARATOR);
 
