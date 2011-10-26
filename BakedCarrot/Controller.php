@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?
 /**
  * Base controller class
@@ -9,6 +10,9 @@
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  *
  */
+=======
+<?php
+>>>>>>> dev
 class Controller
 {
 	protected $errors = null;
@@ -54,4 +58,3 @@ class Controller
 	}
 }	
 
-?>

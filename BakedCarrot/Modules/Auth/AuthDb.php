@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot Auth DB provider
  *
@@ -97,4 +97,3 @@ class AuthDB extends AuthDriver
 		return $user->hasRole($role);
 	}
 }
-?>

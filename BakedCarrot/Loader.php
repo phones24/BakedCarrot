@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * Loader 
  *
@@ -110,4 +110,3 @@ class Loader
 	}
 }	
 
-?>

@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot navigation helper
  *
@@ -150,4 +150,3 @@ class Navigation extends Module
 	}
 }
 
-?>

@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot view PHP driver
  *
@@ -29,4 +29,3 @@ class ViewPhp extends ViewBase
 	}
 }
 
-?>

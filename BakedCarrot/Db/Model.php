@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot ORM model class
  * 
@@ -388,4 +388,3 @@ class Model implements ArrayAccess
 	
 	
 }
-?>

@@ -1,11 +1,10 @@
-<?
+<?php
 /**
  * BakedCarrot image manipulation module
  *
  * @package BakedCarrot
  * @subpackage Image
  * @author Yury Vasiliev
- * @version 0.3
  *
  *
  * 
@@ -472,4 +471,3 @@ class Image extends Module
 	}
 
 }
-?>

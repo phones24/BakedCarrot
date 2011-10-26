@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot Auth File provider
  *
@@ -175,4 +175,3 @@ class AuthFile extends AuthDriver
 		file_put_contents($this->file, $rows, LOCK_EX);
 	}
 }
-?>

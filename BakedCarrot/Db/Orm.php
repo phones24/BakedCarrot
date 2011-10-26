@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot ORM module
  * 
@@ -46,4 +46,3 @@ class Orm
 	}
 }
 
-?>

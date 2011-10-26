@@ -1,4 +1,4 @@
-<?
+<?php
 class Log
 {
 	const LEVEL_CRIT = 3;
@@ -88,4 +88,3 @@ class Log
 	
 }
 
-?>

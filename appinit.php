@@ -1,7 +1,20 @@
-<?
+<?php
+/**
+ * BakedCarrot application initialization file 
+ *
+ * @package BakedCarrot
+ * @author Yury Vasiliev
+ * 
+ *
+ *
+ * 
+ */
+
+// turning on error reporting
 error_reporting(E_ALL | E_STRICT);
 
 
+// loading main library file
 require SYSPATH . 'App.php';
 
 
@@ -20,4 +33,3 @@ Router::add('default', '/', array(
 
 // run the application
 App::run();
-?>

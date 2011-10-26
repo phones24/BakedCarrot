@@ -1,6 +1,4 @@
-<?
-	class ImageException extends Exception
-	{
-	
-	}
-?>
+<?php
+class ImageException extends Exception
+{
+}

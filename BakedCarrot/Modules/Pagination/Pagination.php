@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot pagination module
  *
@@ -142,4 +142,3 @@ class Pagination extends Module
 	}
 
 }
-?>

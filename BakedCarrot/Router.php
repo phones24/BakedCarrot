@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot Router 
  * 
@@ -61,4 +61,3 @@ class Router
 	
 }	
 
-?>

@@ -1,5 +1,4 @@
-<?
-
+<?php
 class ControllerIndex extends Controller
 {
 	public function actionGet__index()
@@ -11,5 +10,3 @@ class ControllerIndex extends Controller
 		echo $view->render('index.php', $data);	
 	}
 }
-
-?>

@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot auth module
  *
@@ -161,4 +161,3 @@ class Auth extends Module
 	
 	
 }
-?>

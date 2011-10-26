@@ -1,11 +1,10 @@
-<?
+<?php
 /**
  * BakedCarrot file library module
  *
  * @package BakedCarrot
  * @subpackage Filelib
  * @author Yury Vasiliev
- * @version 0.3
  * @todo add more callbacks
  *
  * 
@@ -497,4 +496,3 @@ class Filelib extends Module
 
 }
 
-?>

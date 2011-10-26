@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot Application class
  *
@@ -468,4 +468,3 @@ class App
 	}
 }
 
-?>

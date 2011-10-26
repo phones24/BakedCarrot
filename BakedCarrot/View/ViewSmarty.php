@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot view Smarty driver
  *
@@ -54,4 +54,3 @@ class ViewSmarty extends ViewBase
 	}
 }
 
-?>

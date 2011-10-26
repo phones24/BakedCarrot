@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot view PHPTAL driver
  *
@@ -46,4 +46,3 @@ class ViewPHPTAL extends ViewBase
 	}
 }
 
-?>

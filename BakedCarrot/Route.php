@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 /**
  * Route
  *
@@ -9,6 +10,8 @@
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php) 
  * 
  */
+=======
+>>>>>>> dev
 class Route
 {
 	private $params = array();

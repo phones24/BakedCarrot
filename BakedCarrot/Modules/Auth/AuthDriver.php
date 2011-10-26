@@ -1,6 +1,6 @@
-<?
+<?php
 /**
- * BakedCarrot Auth provider
+ * BakedCarrot auth driver abstract class
  *
  * @package BakedCarrot
  * @subpackage Auth
@@ -25,4 +25,3 @@ abstract class AuthDriver
 
 	abstract public function getAnonUser();
 }
-?>
