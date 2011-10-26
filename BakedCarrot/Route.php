@@ -1,4 +1,4 @@
-<?
+<?php
 class Route
 {
 	private $params = array();
@@ -102,4 +102,3 @@ class Route
 	}
 }	
 
-?>

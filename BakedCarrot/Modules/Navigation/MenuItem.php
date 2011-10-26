@@ -1,4 +1,4 @@
-<?
+<?php
 class MenuItem implements ArrayAccess
 {
 	private $item = null;
@@ -209,4 +209,3 @@ class MenuItem implements ArrayAccess
 	
 }
 
-?>

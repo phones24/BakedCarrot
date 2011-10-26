@@ -1,4 +1,4 @@
-<?
+<?php
 
 
 class NavigationDb extends NavigationDriver
@@ -62,4 +62,3 @@ class NavigationDb extends NavigationDriver
 	
 }
 
-?>

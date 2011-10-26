@@ -1,4 +1,4 @@
-<?
+<?php
 class Controller
 {
 	protected $errors = null;
@@ -44,4 +44,3 @@ class Controller
 	}
 }	
 
-?>

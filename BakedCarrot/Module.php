@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot abstract module class
  *
@@ -26,4 +26,3 @@ abstract class Module
 		return $default;
 	}
 }
-?>

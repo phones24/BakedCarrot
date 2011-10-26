@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot Database unit
  *
@@ -206,4 +206,3 @@ class Db
 	}
 }
 
-?>

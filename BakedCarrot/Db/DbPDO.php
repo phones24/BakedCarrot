@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot PDO subclass
  *
@@ -31,4 +31,3 @@ class DbPDO extends PDO
 		return $stmt;
 	}
 }
-?>

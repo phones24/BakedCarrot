@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot Loader class
  * Takes care of controllers loading
@@ -105,4 +105,3 @@ class Loader
 	}
 }	
 
-?>

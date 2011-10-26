@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot Request
  *
@@ -180,4 +180,3 @@ class Request
 
 
 }	
-?>

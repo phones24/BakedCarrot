@@ -1,6 +1,4 @@
-<?
-	class FilelibException extends Exception
-	{
-	
-	}
-?>
+<?php
+class FilelibException extends Exception
+{
+}

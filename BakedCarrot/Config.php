@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot Config class
  * 
@@ -181,4 +181,3 @@ class Config implements ArrayAccess
 	}
 }
 
-?>

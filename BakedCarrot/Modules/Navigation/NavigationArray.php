@@ -1,4 +1,4 @@
-<?
+<?php
 class NavigationArray extends NavigationDriver
 {
 	protected $params = null;
@@ -25,4 +25,3 @@ class NavigationArray extends NavigationDriver
 	
 }
 
-?>

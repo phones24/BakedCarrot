@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot view class
  *
@@ -73,4 +73,3 @@ class View
 	
 }
 
-?>

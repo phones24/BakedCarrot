@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot view driver base class
  *
@@ -67,4 +67,3 @@ abstract class ViewBase
 	
 }
 
-?>

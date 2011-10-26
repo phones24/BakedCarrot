@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * BakedCarrot ORM collection
  *
@@ -185,4 +185,3 @@ class Collection
 	
 
 }
-?>
