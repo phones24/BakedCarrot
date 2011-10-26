@@ -5,7 +5,7 @@
  * @package BakedCarrot
  * @subpackage Auth
  * @author Yury Vasiliev
- * @version 0.3
+ * 
  *
  *
  * 
@@ -28,7 +28,7 @@ class AuthDB extends AuthDriver
 	{
 		$user = Orm::collection('user')->findOne('username = ? and password = ?', array($login, $password));
 	
-		return $user->loaded() ? $user : null;
+		return $user && $user->loaded() ? $user : null;
 	}
 	
 	
@@ -41,7 +41,7 @@ class AuthDB extends AuthDriver
 		try {
 			Db::begin();
 			
-			$user->last_login = Db::expr('now()');
+			$user->last_login = Db::now();
 			$user->store();
 			
 			$session = Orm::collection('session')->load();

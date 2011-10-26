@@ -1,4 +1,14 @@
 <?
+/**
+ * BakedCarrot view PHPTAL driver
+ *
+ * @package BakedCarrot
+ * @subpackage View
+ * @author Yury Vasiliev
+ *
+ *
+ * 
+ */
 class ViewPHPTAL extends ViewBase
 {
 	private $tmpl = null;

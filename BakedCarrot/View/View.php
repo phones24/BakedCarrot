@@ -1,4 +1,15 @@
 <?
+/**
+ * BakedCarrot view class
+ *
+ * @package BakedCarrot
+ * @subpackage View
+ * @author Yury Vasiliev
+ *
+ *
+ * 
+ */
+ 
 class View
 {
 	private $driver = null;
@@ -6,8 +17,9 @@ class View
 	
 	public function __construct() 
 	{
-		$driver_class = Config::getVar('view_driver', 'ViewPhp');
+		$driver_class = Config::getVar('view_driver', 'Php');
 		
+		$driver_class = 'View' . $driver_class;
 		if(!class_exists($driver_class)) {
 			require $driver_class . EXT;
 		}

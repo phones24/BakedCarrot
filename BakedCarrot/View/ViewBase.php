@@ -1,4 +1,14 @@
 <?
+/**
+ * BakedCarrot view driver base class
+ *
+ * @package BakedCarrot
+ * @subpackage View
+ * @author Yury Vasiliev
+ *
+ *
+ * 
+ */
 abstract class ViewBase 
 {
 	protected $data = array();

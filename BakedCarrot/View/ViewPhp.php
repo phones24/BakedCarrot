@@ -1,4 +1,14 @@
 <?
+/**
+ * BakedCarrot view PHP driver
+ *
+ * @package BakedCarrot
+ * @subpackage View
+ * @author Yury Vasiliev
+ *
+ *
+ * 
+ */
 class ViewPhp extends ViewBase
 {
 	public function __construct()

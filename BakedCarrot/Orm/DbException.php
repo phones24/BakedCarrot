@@ -1,6 +1,0 @@
-<?
-	class DbException extends Exception
-	{
-	
-	}
-?>

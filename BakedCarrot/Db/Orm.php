@@ -1,4 +1,13 @@
 <?
+/**
+ * BakedCarrot ORM module
+ * 
+ * @package BakedCarrot
+ * @subpackage Db
+ * @author Yury Vasiliev
+ *
+ * 
+ */
 class Orm
 {
 	const MODEL_CLASS_PREFIX = 'Model';
@@ -6,7 +15,6 @@ class Orm
 	const COLLECTION_CLASS_PREFIX = 'Collection';
 	const COLLECTION_BASE_CLASS = 'Collection';
 	
-	private static $worker = null;
 	private static $collections = array();
 	
 	
@@ -15,22 +23,14 @@ class Orm
 		if(!isset(self::$collections[$name])) {
 			$class = self::COLLECTION_CLASS_PREFIX . ucfirst($name);
 			
-			if(!class_exists($class)) {
-				$files_to_try[] = ucfirst($name) . EXT;
-				$files_to_try[] = $class . EXT;
-				
-				foreach($files_to_try as $file) {
-					if(is_file(MODELPATH . $file)) {
-						require MODELPATH . $file;
-						break;
-					}
-				}
+			if(!class_exists($class) && is_file(COLLPATH . $name . EXT)) {
+				require COLLPATH . $name . EXT;
 			}
 			
 			if(class_exists($class)) {
 				$collection = new $class($name);
 				
-				if(!is_subclass_of($object, self::COLLECTION_BASE_CLASS)) {
+				if(!is_subclass_of($collection, self::COLLECTION_BASE_CLASS)) {
 					throw new OrmException("Class $class is not subclass of " . self::COLLECTION_BASE_CLASS);
 				}
 			}

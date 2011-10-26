@@ -1,4 +1,15 @@
 <?
+/**
+ * BakedCarrot PDO subclass
+ *
+ * @package BakedCarrot
+ * @subpackage Db
+ * @author Yury Vasiliev
+ *
+ *
+ * 
+ */
+ 
 class DbPDO extends PDO 
 {
 	public function query($sql) 

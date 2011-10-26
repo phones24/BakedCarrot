@@ -25,8 +25,11 @@ define('CTRLPATH', APPPATH . 'controllers' . DIRECTORY_SEPARATOR);
 // full path to views
 define('VIEWSPATH', APPPATH . 'views' . DIRECTORY_SEPARATOR);
 
-// full path to models and collections
+// full path to models
 define('MODELPATH', APPPATH . 'models' . DIRECTORY_SEPARATOR);
+
+// full path to collections
+define('COLLPATH', APPPATH . 'collections' . DIRECTORY_SEPARATOR);
 
 // default extension used by class loaders
 define('EXT', '.php');
@@ -49,30 +52,35 @@ class App
 	/**
 	 * Ponter to itself
 	 * @var App
+	 * @static
 	 */
 	private static $instance = null;
 
 	/**
 	 * List of all loaded modules
 	 * @var array
+	 * @static
 	 */
 	private static $modules = null;
 
 	/**
 	 * List of params
 	 * @var array
+	 * @static
 	 */
 	private static $params = null;
 
 	/**
 	 * Current application mode
 	 * @var int
+	 * @static
 	 */
 	private static $app_mode = null;
 	
 	/**
 	 * List of installed exception handlers
 	 * @var array
+	 * @static
 	 */
 	private static $exception_handlers = array();
 	
@@ -80,6 +88,7 @@ class App
 	/**
 	 * List of classes for autoloader
 	 * @var array
+	 * @static
 	 */
 	private static $autoload_dirs = array('Db', 'View', 'Exceptions');
 
@@ -99,6 +108,7 @@ class App
 	 *
 	 * @param array $params initialization parameters
 	 * @return void
+	 * @static
 	 */
 	public static function create(array $params = null)
 	{
@@ -140,7 +150,7 @@ class App
 			// creating base objects
 			Log::create();
 			
-			// application params
+			// saving application params
 			self::$params = $params;
 			
 			// taking care of magic quotes
@@ -162,11 +172,12 @@ class App
 	
 
 	/**
-	 * Sends response with redirect back to client
+	 * Sends response with HTTP redirect
 	 *
 	 * @param string $url address 
 	 * @param integer $status HTTP status code (300-307)
 	 * @return void
+	 * @static
 	 */
 	public static function redirect($url, $status = 302) 
 	{
@@ -176,7 +187,7 @@ class App
 			exit;
 		} 
 		else {
-			throw new InvalidArgumentException('Redirect only accepts HTTP 300-307 status codes.');
+			trigger_error('Redirect only accepts HTTP 300-307 status codes', E_USER_ERROR);
 		}
 	}
 
@@ -187,6 +198,7 @@ class App
 	 *
 	 *
 	 * @return void
+	 * @static
 	 */
 	public static function run()
 	{
@@ -200,12 +212,12 @@ class App
 				
 				$matched_route = Router::getMatchedRoute();
 				
-				Log::out(__METHOD__ . ' Matched route: "' . $matched_route->name . '", pattern: ' . $matched_route->raw_pattern, Log::LEVEL_DEBUG);
-				
 				if(!$matched_route) {
 					throw new NotFoundException();
 				}
 			
+				Log::out(__METHOD__ . ' Matched route: "' . $matched_route->name . '", pattern: ' . $matched_route->raw_pattern, Log::LEVEL_DEBUG);
+				
 				// only starts output buffering in development mode
 				if(!self::isDevMode()) {
 					ob_start();
@@ -243,6 +255,7 @@ class App
 	 *
 	 * @param Exception $e exception to be handeled 
 	 * @return void
+	 * @static
 	 */
 	private function handleDefaultException($e)
 	{
@@ -271,12 +284,13 @@ class App
 	 * Handle php errors (except fatals) by throwing RuntimeException.
 	 * Returns true if error has been handeled
 	 *
-	 * @param errno error number
-	 * @param errstr error message
-	 * @param errfile source file
-	 * @param errline line in file
-	 * @param errcontext the context
+	 * @param $errno error number
+	 * @param $errstr error message
+	 * @param $errfile source file
+	 * @param $errline line in file
+	 * @param $errcontext the context
 	 * @return bool
+	 * @static
 	 */
 	public static function handleErrors($errno, $errstr, $errfile = '', $errline = 0, $errcontext = array())
 	{
@@ -292,13 +306,14 @@ class App
 	 * Sets application mode. Function only accepts App::MODE_DEVELOPMENT or
 	 * App::MODE_PRODUCTION
 	 *
-	 * @param mode application mode
+	 * @param $mode application mode
 	 * @return void
+	 * @static
 	 */
 	public static function setMode($mode)
 	{
 		if($mode != self::MODE_DEVELOPMENT && $mode != self::MODE_PRODUCTION) {
-			throw new InvalidArgumentException('Invalid setMode parameter');
+			trigger_error('Invalid setMode parameter', E_USER_ERROR);
 		}
 		
 		self::$app_mode = $mode;
@@ -309,6 +324,7 @@ class App
 	 * Checks if the application is in development mode
 	 *
 	 * @return bool
+	 * @static
 	 */
 	public static function isDevMode()
 	{
@@ -323,9 +339,10 @@ class App
 	 * 
 	 * "handlerExceptionName" must be defined in controller
 	 *
-	 * @param class_name name of the exception to be handeled
-	 * @param handler name of the controller that handle the exception
+	 * @param $class_name name of the exception to be handeled
+	 * @param $handler name of the controller that handle the exception
 	 * @return void
+	 * @static
 	 */
 	public static function setExceptionHandler($class_name, $handler)
 	{
@@ -338,9 +355,10 @@ class App
 	 *
 	 *		$auth = App::module('auth');
 	 * 
-	 * @param module name of the module
-	 * @param params array with module parameters
+	 * @param $module name of the module
+	 * @param $params array with module parameters
 	 * @return void
+	 * @static
 	 */
 	public static function module($module, $params = null)
 	{
@@ -351,13 +369,13 @@ class App
 				$path = MODULEPATH . ucfirst($module) . DIRECTORY_SEPARATOR . ucfirst($module) . '.php';
 				
 				if(!is_readable($path)) {
-					throw new RuntimeException('Cannot load module ' . $path);
+					trigger_error('Cannot load module ' . $path, E_USER_ERROR);
 				}
 				
 				require $path;
 			}
 			
-			$module_object = $module::create($params);
+			$module_object = new $module($params);
 		}
 		catch(Exception $e) {
 			self::$instance->handleDefaultException($e);
@@ -367,6 +385,13 @@ class App
 	}
 	
 	
+	/**
+	 * Recursively remove quotes from string or array
+	 *
+	 * @param $data source
+	 * @return cleared data
+	 * @static
+	 */
     private static function clearMagicQuotes($data)
 	{
 		if(is_array($data)) {
@@ -378,6 +403,13 @@ class App
     }
 	
 	
+	/**
+	 * Removes variable from GLOBALS
+	 *
+	 * @param params array with params to be removed
+	 * @return void
+	 * @static
+	 */
 	private static function unregisterGlobals(array $params)
 	{
 		foreach($params as $key => $value) {
@@ -388,6 +420,13 @@ class App
 	}
 
 
+	/**
+	 * Autoload handler
+	 *
+	 * @param $class class name to be loaded
+	 * @return void
+	 * @static
+	 */
 	public static function autoload($class)
 	{
 		// try SYSPATH first
@@ -407,6 +446,20 @@ class App
 	}
 	
 	
+	/**
+	 * Returns parameter of current route
+	 *
+	 * 		// adding route
+	 *		Router::add('blog', '/blog/(<post_id:\d+>/)');
+	 *		
+	 *		// getting post_id
+	 *		$post_id = App::routeParam('post_id');
+	 *
+	 *
+	 * @param $name name of the parameter
+	 * @return parameter value or NULL if this parameter is not defined
+	 * @static
+	 */
 	public static function routeParam($name)
 	{
 		if($route = Router::getCurrentRoute()) {

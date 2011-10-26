@@ -1,8 +1,9 @@
 <?
 /**
- * BakedCarrot ORM Collection
+ * BakedCarrot ORM collection
  *
  * @package BakedCarrot
+ * @subpackage Db
  * @author Yury Vasiliev
  *
  *
@@ -63,7 +64,7 @@ class Collection
 	
 	public function findAll($where = null, array $values = null)
 	{
-		$this->find($where, $values);
+		return $this->find($where, $values);
 	}
 	
 	
@@ -73,7 +74,9 @@ class Collection
 		$sql .= !empty($where) ? 'where ' . $where : ' ';
 		$sql .= ' limit 1';
 		
-		return $this->createObject(Db::getRow($sql, $values));
+		$result = Db::getRow($sql, $values);
+		
+		return $result ? $this->createObject($result) : null;
 	}
 
 
@@ -88,7 +91,7 @@ class Collection
 		$where = !$where ? '1' : $where;
 		$where .= ' limit ' . ($count * ($page - 1)) . ', ' . $count;
 		
-		return $this->find($where, $values);
+		return $this->findAll($where, $values);
 	}
 	
 	
@@ -97,7 +100,7 @@ class Collection
 		$sql = 'select count(*) from `' . $this->getTableName() . '` ';
 		$sql .= !empty($where) ? 'where ' . $where : ' ';
 
-		return Db::getCol($sql, $values);
+		return Db::getCell($sql, $values);
 	}
 
 
@@ -110,6 +113,8 @@ class Collection
 		$object->runEvent('onBeforeDelete');
 
 		Db::delete($this->getTableName(), self::PK . ' = ?', array($object->getId()));
+		
+		$object->runEvent('onAfterDelete');
 		
 		unset($object);
 	}
@@ -132,8 +137,8 @@ class Collection
 		$class = Orm::MODEL_CLASS_PREFIX . ucfirst($this->getTableName());
 		
 		if(!class_exists($class)) {
-			$files_to_try[] = ucfirst($this->getTableName()) . EXT;
 			$files_to_try[] = $this->getTableName() . EXT;
+			$files_to_try[] = ucfirst($this->getTableName()) . EXT;
 			
 			foreach($files_to_try as $file) {
 				if(is_file(MODELPATH . $file)) {

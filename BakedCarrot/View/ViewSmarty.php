@@ -1,4 +1,14 @@
 <?
+/**
+ * BakedCarrot view Smarty driver
+ *
+ * @package BakedCarrot
+ * @subpackage View
+ * @author Yury Vasiliev
+ *
+ *
+ * 
+ */
 class ViewSmarty extends ViewBase
 {
 	private $smarty = null;

@@ -5,7 +5,7 @@
  * @package BakedCarrot
  * @subpackage Auth
  * @author Yury Vasiliev
- * @version 0.3
+ * 
  *
  *
  * 

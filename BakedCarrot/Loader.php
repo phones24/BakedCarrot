@@ -5,7 +5,7 @@
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- * @version 0.3
+ * 
  *
  *
  * 
@@ -20,11 +20,15 @@ class Loader
 	 */
 	public static function invoke(Route $route)
 	{
-		$ctrl_file = realpath(CTRLPATH . DIRECTORY_SEPARATOR . $route->controller . EXT);
+		$ctrl_file = CTRLPATH . $route->controller . EXT;
 		$class_name = self::getClassNameByController($route->controller);
 		
-		if(!$ctrl_file || !is_readable($ctrl_file)) {
+		if(!$ctrl_file) {
 			throw new NotFoundException('Could not find controller "' . $route->controller . '" for route "' . $route->name . '"');
+		}
+		
+		if(!is_readable($ctrl_file)) {
+			throw new NotFoundException('Cannot load file "' . $ctrl_file . '" for route "' . $route->name . '"');
 		}
 		
 		if(!class_exists($class_name)) {

@@ -3,26 +3,23 @@
  * BakedCarrot file library module
  *
  * @package BakedCarrot
- * @subpackage Auth
+ * @subpackage Filelib
  * @author Yury Vasiliev
  * @version 0.3
- *
+ * @todo add more callbacks
  *
  * 
  */
 
 require 'FilelibException.php';
 
-// TODO: make a base class. 
-// at leat to export params from construct to class properties
 
-// TODO: add more callbacks
-
-class Filelib
+class Filelib extends Module
 {
 	private $current_dir = '';
 	private $selected_file = '';
 	private $filelib_uri = '';
+	private $root_dir = '';
 	private $thumbnails = false;
 	private $thumbnails_width = 50;
 	private $thumbnails_height = 50;
@@ -33,38 +30,23 @@ class Filelib
 	private $callbacks = array();
 	
 	
-	public function __construct($params = null)
+	public function __construct(array $params = null)
 	{	
-		if(isset($params['dir'])) {
-			$this->filelib_dir = $params['dir'];
-		}
-		elseif(!isset($params['dir']) && Config::checkVar('filelib.dir')) {
-			$this->filelib_dir = Config::getVar('filelib.dir');
+		if(!($this->root_dir = $this->loadParam('root_dir', $params)) || !is_dir($this->root_dir)) {
+			throw new FilelibException('Invalid root directory: ' . $this->root_dir);
 		}
 		
-		if(!is_dir($this->filelib_dir)) {
-			throw new InvalidArgumentException('Invalid directory: ' . $this->filelib_dir);
-		}
+		$this->thumbnails = $this->loadParam('thumbnails', $params, $this->thumbnails);
+		$this->thumbnails_width = $this->loadParam('thumbnails_width', $params, $this->thumbnails_width);
+		$this->thumbnails_height = $this->loadParam('thumbnails_height', $params, $this->thumbnails_height);
+		$this->thumbnails_color = $this->loadParam('thumbnails_color', $params, $this->thumbnails_color);
+		$this->size_format = $this->loadParam('size_format', $params, $this->size_format);
+		$this->date_format = $this->loadParam('date_format', $params, $this->date_format);
+		$this->callbacks['after_upload'] = $this->loadParam('after_upload_callback', $params);
 		
-		if(isset($params['thumbnails'])) {
-			$this->thumbnails = $params['thumbnails'];
-		}
-
-		if(isset($params['thumbnails_width'])) {
-			$this->thumbnails_width = $params['thumbnails_width'];
-		}
-
-		if(isset($params['thumbnails_height'])) {
-			$this->thumbnails_height = $params['thumbnails_height'];
-		}
-		
-		$this->filelib_dir = rtrim(realpath($this->filelib_dir), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-		$this->filelib_uri = $this->getUriByPath($this->filelib_dir);
-		$this->current_dir = $this->filelib_dir;
-		
-		if(isset($params['after_upload_callback'])) {
-			$this->callbacks['after_upload'] = $params['after_upload_callback'];
-		}
+		$this->root_dir = rtrim(realpath($this->root_dir), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+		$this->filelib_uri = $this->getUriByPath($this->root_dir);
+		$this->current_dir = $this->root_dir;
 	}
 
 	
@@ -129,13 +111,13 @@ class Filelib
 
 	public function getFilelibDir()
 	{
-		return $this->filelib_dir;
+		return $this->root_dir;
 	}
 	
 	
 	public function isValidDir($dir)
 	{
-		return strpos($dir, $this->filelib_dir) === 0 && is_dir($dir);
+		return strpos($dir, $this->root_dir) === 0 && is_dir($dir);
 	}
 	
 	
@@ -174,7 +156,7 @@ class Filelib
 		$newdir = trim($this->fixPath($newdir), DIRECTORY_SEPARATOR);
 		$real_dir = $this->getCurrentDir() . $newdir . DIRECTORY_SEPARATOR;
 		
-		if(strpos($real_dir, $this->filelib_dir) !== 0) {
+		if(strpos($real_dir, $this->root_dir) !== 0) {
 			throw new FilelibException('Invalid directory: ' . $real_dir);
 		}
 		

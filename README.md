@@ -6,7 +6,6 @@ BakedCarrot is lightweight and fast php framework inpired by many other framewor
 
 Notable features of BakedCarrot:
 
-
 * MVC compilant
 * Built in simple database module, based on PDO
 * Built in simple ORM module with collection support (inspired by RedBean)

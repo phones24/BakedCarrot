@@ -3,18 +3,15 @@
  * BakedCarrot pagination module
  *
  * @package BakedCarrot
- * @subpackage Auth
+ * @subpackage Pagination
  * @author Yury Vasiliev
  * @version 0.3
  *
  *
  * 
  */
- 
-class Pagination
+class Pagination extends Module
 {
-	protected static $instance = null;
-
 	protected $page = null;
 	protected $rows_count = null;
 	protected $query_param = null;
@@ -25,37 +22,21 @@ class Pagination
 	protected $max_pages = 8;
 	
 
-	public static function create($params = null)
+	public function __construct(array $params = null)
 	{
-		if(!is_null(self::$instance)) {
-			self::$instance = null;
-		}
-		
-		self::$instance = new Pagination($params);
-		
-		return self::$instance;
-	}
-	
-	
-	public function __construct($params = null)
-	{
-		if(!isset($params['rows_count'])) {
+		if(!($this->rows_count = $this->loadParam('rows_count', $params))) {
 			throw new InvalidArgumentException('"rows_count" is not defined');
 		}
 		
-		$this->rows_count = $params['rows_count'];
-
-		if(!isset($params['total_count'])) {
+		if(!($this->total_count = $this->loadParam('total_count', $params))) {
 			throw new InvalidArgumentException('"total_count" is not defined');
 		}
-		
-		$this->total_count = $params['total_count'];
 
-		$this->page = isset($params['page']) ? $params['page'] : 1;
+		$this->page = $this->loadParam('page', $params, 1);
 		$this->page = $this->page < 1 ? 1 : $this->page;
-		$this->query_param = isset($params['query_param']) ? $params['query_param'] : $this->query_param;
-		$this->max_pages = isset($params['max_pages']) ? $params['max_pages'] : $this->max_pages;
-		$this->visible_pages = isset($params['visible_pages']) ? $params['visible_pages'] : $this->visible_pages;
+		$this->query_param = $this->loadParam('query_param', $params);
+		$this->max_pages = $this->loadParam('max_pages', $params, $this->max_pages);
+		$this->visible_pages = $this->loadParam('visible_pages', $params, $this->visible_pages);
 		$this->visible_pages = $this->visible_pages % 2 == 0 ? ++$this->visible_pages : $this->visible_pages;
 		$this->visible_pages = $this->visible_pages < 1 ? 1 : $this->visible_pages;
 	}

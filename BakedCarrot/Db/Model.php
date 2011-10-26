@@ -1,18 +1,18 @@
 <?
 /**
- * BakedCarrot ORM Model
+ * BakedCarrot ORM model class
  * 
  * Provides entity-related ORM functionality. All user models should inherits this class.
  * The objects of this class managed my Collection and should not be created manually.
  *	
  *		$user = Orm::collection('user')->load(); // getting new user from collection
  *		$user->name = 'John'; // setting the property OOP-way
- *		$user['email'] = 'john@example.com'; // or as an array
+ *		$user['email'] = 'john@example.com'; // or as array
  *		$user->store(); // saving record to table "user"
  *
  * @package BakedCarrot
+ * @subpackage Db
  * @author Yury Vasiliev
- *
  *
  * 
  */
@@ -277,7 +277,7 @@ class Model implements ArrayAccess
 		$sql = 'select id from `' . $mm_table . '` ' .
 			'where `' . $related_table . '_id`  = ? and `' . $this->getTableName() . '_id` = ?';
 		
-		return Db::getCol($sql, array($object->getId(), $this->getId())) ? true : false;
+		return Db::getCell($sql, array($object->getId(), $this->getId())) ? true : false;
 	}
 
 
@@ -361,7 +361,7 @@ class Model implements ArrayAccess
 	final public function __get($key)
 	{
 		if(isset($this->storage[$key . '_id'])) {
-			if(isset($this->storage[$key]) && is_object($key) && is_a($key, Orm::MODEL_BASE_CLASS)) {
+			if(isset($this->storage[$key]) && is_object($key) && @is_a($key, Orm::MODEL_BASE_CLASS)) {
 				return $key;
 			}
 			else {
@@ -379,7 +379,7 @@ class Model implements ArrayAccess
 	{
 		$this->modified = true;
 		
-		if(is_object($val) && is_a($val, Orm::MODEL_BASE_CLASS)) {
+		if(is_object($val) && @is_a($val, Orm::MODEL_BASE_CLASS)) {
 			$this->storage[$key . '_id'] = $val->getId();
 		}
 		

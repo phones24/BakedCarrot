@@ -3,6 +3,7 @@
  * BakedCarrot Database unit
  *
  * @package BakedCarrot
+ * @subpackage Db
  * @author Yury Vasiliev
  *
  *
@@ -41,6 +42,8 @@ class Db
 				PDO::MYSQL_ATTR_INIT_COMMAND	=> 'set names ' . $charset,
 				PDO::ATTR_AUTOCOMMIT 			=> true,
 			));
+		
+		Log::out(__METHOD__ . ' Connected to: "' . $dsn . '"', Log::LEVEL_DEBUG);
 	}
 	
 	
@@ -141,7 +144,7 @@ class Db
 	}
 
 
-	public static function getCol($sql, array $values = null)
+	public static function getCell($sql, array $values = null)
 	{
 		self::connect();
 
@@ -191,12 +194,6 @@ class Db
 	}
 
 
-	public static function expr($expr, $values = null)
-	{
-		return self::getCol('select ' . $expr, $values);
-	}
-
-	
 	public static function clean($str)
 	{
 		return str_replace(' ', '', trim($str)); 

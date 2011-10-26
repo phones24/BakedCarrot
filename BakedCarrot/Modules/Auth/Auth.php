@@ -1,11 +1,11 @@
 <?
 /**
- * BakedCarrot Auth module
+ * BakedCarrot auth module
  *
  * @package BakedCarrot
  * @subpackage Auth
  * @author Yury Vasiliev
- * @version 0.3
+ * 
  *
  *
  * 
@@ -15,7 +15,7 @@ require 'AuthException.php';
 require 'AuthDriver.php';
 
 
-class Auth
+class Auth extends Module
 {
 	protected $user = null;
 	protected $driver = null;
@@ -24,37 +24,25 @@ class Auth
 	protected $session_lifetime = null;
 	protected $anon_login = null;
 	protected $anon_name = null;
-	protected static $instance = null;
 	
-	
-	public static function create()
+
+	public function __construct(array $params = null)
 	{
-		if(is_null(self::$instance)) {
-			self::$instance = new self();
+		if(!($driver_class = $this->loadParam('driver', $params))) {
+			throw new AuthException('"driver" is not defined');
 		}
 		
-		return self::$instance;
-	}
+		$this->session_name = $this->loadParam('session_name', $params, 'bakedcarrot');
+		$this->session_lifetime = $this->loadParam('session_lifetime', $params, 3600 * 24 * 365);
+		$this->anon_login = $this->loadParam('anon_login', $params, false);
+		$this->anon_name = $this->loadParam('anon_name', $params, 'anon');
 
-	
-	private function __construct()
-	{
-		$this->config = Config::getInstance();
-		
-		if(!$this->config->auth_driver) {
-			throw new AuthException('"auth_driver" is not defined');
-		}
-	
-		$this->session_name = Config::getVar('auth_session_name', 'bakedcarrot');
-		$this->session_lifetime = Config::getVar('auth_session_lifetime', 3600 * 24 * 365);
-		$this->anon_login = Config::getVar('auth_anon_login', false);
-		$this->anon_name = Config::getVar('auth_anon_name', 'anon');
-	
-		if(!class_exists($this->config->auth_driver)) {
-			require $this->config->auth_driver . EXT;
+		$driver_class = 'Auth' . $driver_class;
+		if(!class_exists($driver_class)) {
+			require $driver_class . EXT;
 		}
 
-		$this->driver = new $this->config->auth_driver();
+		$this->driver = new $driver_class();
 	}
 	
 
@@ -164,12 +152,11 @@ class Auth
 
 	public function hash($string)
 	{
-		if(!$this->config->auth_hash_key) {
+		if(!($auth_hash_key = $this->loadParam('hash_key'))) {
 			throw new AuthException('Hash key is not defined');
 		}
 
-		return hash_hmac('sha256', $string, $this->config->auth_hash_key);
-		//return sha1($string);
+		return hash_hmac('sha256', $string, $auth_hash_key);
 	}
 	
 	
