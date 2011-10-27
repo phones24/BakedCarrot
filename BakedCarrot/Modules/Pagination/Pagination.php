@@ -25,11 +25,11 @@ class Pagination extends Module
 	public function __construct(array $params = null)
 	{
 		if(!($this->rows_count = $this->loadParam('rows_count', $params))) {
-			throw new InvalidArgumentException('"rows_count" is not defined');
+			throw new BakedCarrotException('"rows_count" is not defined');
 		}
 		
 		if(!($this->total_count = $this->loadParam('total_count', $params))) {
-			throw new InvalidArgumentException('"total_count" is not defined');
+			throw new BakedCarrotException('"total_count" is not defined');
 		}
 
 		$this->page = $this->loadParam('page', $params, 1);

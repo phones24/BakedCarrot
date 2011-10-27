@@ -21,7 +21,7 @@ class MenuItem implements ArrayAccess
 			$uri_to_match = @preg_replace('#^' . $owner->ignorePrefix() . '#', '', $uri_to_match);
 			
 			if($uri_to_match === null) {
-				throw new InvalidArgumentException('Invalid parameter: "ignore_prefix"');
+				throw new BakedCarrotException('Invalid parameter: "ignore_prefix"');
 			}
 		}
 		
@@ -54,7 +54,7 @@ class MenuItem implements ArrayAccess
 		
 		if(is_object($this->user) && isset($this->item['uri'])) {
 			if(!method_exists($this->user, 'hasRole')) {
-				throw new RuntimeException(get_class($this->user) . '::hasRole() is not defined');
+				throw new BakedCarrotException(get_class($this->user) . '::hasRole() is not defined');
 			}
 
 			if(($menu_item_route = Router::getRouteByUri($this->item['uri'])) && $menu_item_route->acl) {

@@ -1,4 +1,4 @@
 <?php
-class ImageException extends Exception
+class ImageException extends BakedCarrotException
 {
 }

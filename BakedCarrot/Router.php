@@ -1,12 +1,11 @@
 <?php
 /**
- * BakedCarrot Router 
+ * Router 
  * 
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- *
- *
+ * @license MIT License (http://www.opensource.org/licenses/mit-license.php) 
  * 
  */
 class Router

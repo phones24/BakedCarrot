@@ -52,18 +52,18 @@ class Route
 	public function match($uri_to_match)
 	{
 		if(preg_match("/[^a-zA-Z0-9_\-\.\/\\\]/", $this->controller)) {
-			throw new InvalidArgumentException('Invalid controller name "' . $this->controller . '"');
+			throw new BakedCarrotException('Invalid controller name "' . $this->controller . '"');
 		}
 	
 		if(!self::isValidName($this->action)) {
-			throw new InvalidArgumentException('Invalid action name "' . $this->action . '"');
+			throw new BakedCarrotException('Invalid action name "' . $this->action . '"');
 		}
 		
 		$this->raw_pattern = self::convertPatternToRegex($this->pattern);
 		$matched = @preg_match($this->raw_pattern, $uri_to_match, $matches);
 		
 		if($matched === false) {
-			throw new RuntimeException('Route error: ' . $this->name);
+			throw new BakedCarrotException('Route error: ' . $this->name);
 		}
 		
 		$result = false;
@@ -73,7 +73,7 @@ class Route
 
 			if(isset($matches['controller'])) {
 				if(!self::isValidName($matches['controller'])) {
-					throw new InvalidArgumentException('Invalid controller name "' . $matches['controller'] . '"');
+					throw new BakedCarrotException('Invalid controller name "' . $matches['controller'] . '"');
 				}
 			
 				$this->controller = $matches['controller'];
@@ -81,7 +81,7 @@ class Route
 			
 			if(isset($matches['action'])) {
 				if(!self::isValidName($matches['action'])) {
-					throw new InvalidArgumentException('Invalid action name "' . $matches['action'] . '"');
+					throw new BakedCarrotException('Invalid action name "' . $matches['action'] . '"');
 				}
 			
 				$this->action = $matches['action'];

@@ -101,7 +101,7 @@ class Request
 					$uri = $_SERVER['PHP_SELF'];
 				} 
 				else {
-					throw new RuntimeException('Unable to detect request URI');
+					throw new BakedCarrotException('Unable to detect request URI');
 				}
 			}
 			

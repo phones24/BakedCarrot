@@ -1,6 +1,6 @@
 <?php
 /**
- * BakedCarrot Application class
+ * BakedCarrot application class
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
@@ -185,7 +185,7 @@ class App
 			exit;
 		} 
 		else {
-			trigger_error('Redirect only accepts HTTP 300-307 status codes', E_USER_ERROR);
+			throw new BakedCarrotException('Redirect only accepts HTTP 300-307 status codes');
 		}
 	}
 
@@ -279,7 +279,7 @@ class App
 
 	
 	/**
-	 * Handle php errors (except fatals) by throwing RuntimeException.
+	 * Handle php errors (except fatals) by throwing BakedCarrotException.
 	 * Returns true if error has been handeled
 	 *
 	 * @param $errno error number
@@ -293,7 +293,7 @@ class App
 	public static function handleErrors($errno, $errstr, $errfile = '', $errline = 0, $errcontext = array())
 	{
 		if(error_reporting() & $errno) {
-			throw new RuntimeException($errstr, $errno, 0, $errfile, $errline);
+			throw new BakedCarrotException($errstr, $errno, 0, $errfile, $errline);
 		}
 		
 		return true;
@@ -311,7 +311,7 @@ class App
 	public static function setMode($mode)
 	{
 		if($mode != self::MODE_DEVELOPMENT && $mode != self::MODE_PRODUCTION) {
-			trigger_error('Invalid setMode parameter', E_USER_ERROR);
+			throw new BakedCarrotException('Invalid setMode parameter');
 		}
 		
 		self::$app_mode = $mode;
@@ -367,7 +367,7 @@ class App
 				$path = MODULEPATH . ucfirst($module) . DIRECTORY_SEPARATOR . ucfirst($module) . '.php';
 				
 				if(!is_readable($path)) {
-					trigger_error('Cannot load module ' . $path, E_USER_ERROR);
+					throw new BakedCarrotException('Cannot load module ' . $path);
 				}
 				
 				require $path;

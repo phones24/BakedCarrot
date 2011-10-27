@@ -1,4 +1,4 @@
 <?php
-class FilelibException extends Exception
+class FilelibException extends BakedCarrotException
 {
 }

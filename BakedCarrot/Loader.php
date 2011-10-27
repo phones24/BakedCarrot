@@ -72,7 +72,7 @@ class Loader
 		$method = 'handler' . get_class($e);
 
 		if(!$handler_file || !is_readable($handler_file)) {
-			throw new RuntimeException('Could not find exception handler "' . $handler . '"');
+			throw new BakedCarrotException('Could not find exception handler "' . $handler . '"');
 		}
 		
 		if(!class_exists($class_name)) {
@@ -80,13 +80,13 @@ class Loader
 		}
 		
 		if(!class_exists($class_name)) {
-			throw new RuntimeException('Class not defined "' . $class_name . '"');
+			throw new BakedCarrotException('Class not defined "' . $class_name . '"');
 		}
 		
 		$handler_class = new $class_name(); 
 		
 		if(!method_exists($handler_class, $method)) {
-			throw new RuntimeException('Could not find method "' . $method . '" of class "' . $class_name . '"');
+			throw new BakedCarrotException('Could not find method "' . $method . '" of class "' . $class_name . '"');
 		}
 		
 		call_user_func_array(array($handler_class, $method), array($e));

@@ -11,7 +11,7 @@ class NavigationArray extends NavigationDriver
 		$this->params = $params;
 		
 		if(!is_array($params['source'])) {
-			throw new InvalidArgumentException('"source" must be an array');
+			throw new BakedCarrotException('"source" must be an array');
 		}
 		
 		$this->source = $params['source'];

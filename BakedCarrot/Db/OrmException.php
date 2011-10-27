@@ -1,4 +1,4 @@
 <?php
-class OrmException extends Exception
+class OrmException extends BakedCarrotException
 {
 }

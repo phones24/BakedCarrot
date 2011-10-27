@@ -28,11 +28,11 @@ class Navigation extends Module
 	public function __construct($params = null)
 	{
 		if(!($driver_class = $this->loadParam('driver', $params))) {
-			throw new InvalidArgumentException('"driver" is not defined');
+			throw new BakedCarrotException('"driver" is not defined');
 		}
 		
 		if(!($source = $this->loadParam('source', $params))) {
-			throw new InvalidArgumentException('"source" is not defined');
+			throw new BakedCarrotException('"source" is not defined');
 		}
 		
 		$this->ignore_prefix = $this->loadParam('ignore_prefix', $params);

@@ -1,4 +1,4 @@
 <?php
-class DbException extends Exception
+class DbException extends BakedCarrotException
 {
 }
