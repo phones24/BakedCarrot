@@ -69,8 +69,8 @@ class Filelib extends Module
 
 	public function changeDir($dir)
 	{
-		if(!strlen($dir)) {
-			return;
+		if(!mb_strlen($dir)) {
+			return false;
 		}
 		
 		if($dir[0] == DIRECTORY_SEPARATOR || $dir[0] == '/') {
@@ -83,10 +83,11 @@ class Filelib extends Module
 		$dir = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 		
 		if(!$this->isValidDir($dir)) {
-			throw new FilelibException('Invalid directory: ' . $dir);
+			return false;
 		}
 		
 		$this->current_dir = $dir;
+		return true;
 	}
 
 
@@ -116,7 +117,9 @@ class Filelib extends Module
 	
 	public function isValidDir($dir)
 	{
-		return strpos($dir, $this->root_dir) === 0 && is_dir($dir);
+		$dir = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+	
+		return mb_strpos($dir, $this->root_dir) === 0 && is_dir($dir);
 	}
 	
 	
@@ -131,7 +134,7 @@ class Filelib extends Module
 		
 		if(is_uploaded_file($src_file_path)) {
 			if(!@move_uploaded_file($src_file_path, $dst_file_path)) {
-				throw new FilelibException('cannot move uploaded file');
+				throw new FilelibException('Cannot move uploaded file');
 			}
 		}
 		else {
@@ -371,7 +374,7 @@ class Filelib extends Module
 		$string = strtoupper(pathinfo($file, PATHINFO_EXTENSION));
 
 		if(!is_file($cache_file)) {
-			$ipr = App::module('ImageProcessor');
+			$ipr = App::module('Image');
 			$ipr->createIcon($string, $this->thumbnails_color, $this->thumbnails_bgr, $this->thumbnails_width, $this->thumbnails_height)
 				->saveAs($cache_file);
 			unset($ipr);
@@ -386,7 +389,7 @@ class Filelib extends Module
 		$cache_file = $this->getCachedFileName($file);
 
 		if(!is_file($cache_file)) {
-			$ipr = App::module('ImageProcessor');
+			$ipr = App::module('Image');
 			$ipr->loadFromFile($file)
 				->saveAsThumbnail($cache_file, $this->thumbnails_width, $this->thumbnails_height);
 			unset($ipr);
@@ -400,7 +403,7 @@ class Filelib extends Module
 	{
 		$path_parts = pathinfo($file);
 
-		return $path_parts['dirname'] . '/' . ($path_parts['filename'][0] != '.' ? '.' : '') . $path_parts['filename'] . '__' . filesize($file) . ';' .  $this->thumbnails_width . 'x' . $this->thumbnails_height . '.jpg';
+		return $path_parts['dirname'] . '/' . ($path_parts['filename'][0] != '.' ? '.' : '') . $path_parts['filename'] . '__' .  $this->thumbnails_width . 'x' . $this->thumbnails_height . '.jpg';
 	}
 	
 	

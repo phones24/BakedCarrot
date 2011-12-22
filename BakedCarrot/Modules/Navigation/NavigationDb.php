@@ -42,7 +42,7 @@ class NavigationDb extends NavigationDriver
 	protected function loadAll()
 	{
 		if(is_null($this->items)) {
-			$this->items = Orm::collection($this->source)->findAll('1 order by sort');
+			$this->items = Orm::collection($this->source)->order('sort')->findAll();
 		}
 	}
 	
@@ -51,9 +51,11 @@ class NavigationDb extends NavigationDriver
 	{
 		$result = array();
 		
-		foreach($this->items as $item) {
-			if($item->parent_id == $parent_id) {
-				$result[$item->getId()] = $item;
+		if(is_array($this->items)) {
+			foreach($this->items as $item) {
+				if($item->parent_id == $parent_id) {
+					$result[$item->getId()] = $item;
+				}
 			}
 		}
 		

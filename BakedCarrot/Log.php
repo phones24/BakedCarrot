@@ -32,7 +32,7 @@ class Log
 		self::setLevel(Config::getVar('log_level', self::LEVEL_INFO));
 		
 		if(self::$enabled && is_file(self::$file)) {
-			error_log("\n", 3, self::$file);
+			@error_log("\n", 3, self::$file);
 		}
 
 		return self::$instance;
@@ -50,7 +50,7 @@ class Log
 		self::$file = $file;
 		
 		if(self::$enabled) {
-			error_log("\n", 3, self::$file);
+			@error_log("\n", 3, self::$file);
 		}
 	}
 	

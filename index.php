@@ -3,7 +3,6 @@
  * BakedCarrot bootstrap file
  *
  * @package BakedCarrot
- * @author Yury Vasiliev
  * 
  *
  *
@@ -20,7 +19,7 @@ define('APPPATH', DOCROOT . 'app' . DIRECTORY_SEPARATOR);
 define('TMPPATH', DOCROOT . 'tmp' . DIRECTORY_SEPARATOR);
 
 
-require 'appinit.php';
+require APPPATH . 'appinit.php';
 
 
 /*	

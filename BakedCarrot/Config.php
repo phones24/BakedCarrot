@@ -1,13 +1,14 @@
 <?php
 /**
- * BakedCarrot Config class
+ * BakedCarrot config class
  * 
  * Singleton class for configuration array. 
- * To load external configuration file pass the name to App::create 
+ * To load external configuration file, pass its name to App::create 
  * or create class instance with Config::create('config.php');
  *
  * Example of use:
  *
+ *		<code>
  * 		App::create(array(
  * 				'config' => DOCROOT . 'config.php',
  * 				...
@@ -27,10 +28,10 @@
  *		// as array
  *		$conf = Config::getInstance();
  *		$val = $conf['my_var'];
+ *		</code>
  *
  *
  * @package BakedCarrot
- * @author Yury Vasiliev
  * 
  *
  *
@@ -40,6 +41,16 @@ class Config implements ArrayAccess
 {
 	private static $storage = null;
 	private static $instance = null;
+	
+	
+	/**
+	 * Private constructor
+	 *
+	 * @return void
+	 */
+	private function __construct()
+	{
+	}
 	
 	
 	/**
@@ -54,13 +65,16 @@ class Config implements ArrayAccess
 		if(is_null(self::$instance)) {
 			self::$instance = new self;
 		}
-		
+
 		if($file && is_readable($file)) {
 			$vars_to_add = require $file;
 
 			Log::out(__METHOD__ . ' Configuration file loaded: "' . $file . '"', Log::LEVEL_DEBUG);
 			
 			self::setVar($vars_to_add);
+		}
+		elseif($file && !is_readable($file)) {
+			throw new BakedCarrotException('Cannot read configuration file: ' . $file);
 		}
 		
 		return self::$instance;
@@ -107,7 +121,7 @@ class Config implements ArrayAccess
 	 * @return mixed
 	 * @static
 	 */
-	public static function getVar($key, $default = null)
+	public static function &getVar($key, $default = null)
 	{
 		if(isset(self::$storage[$key])) {
 			return self::$storage[$key];
@@ -141,7 +155,7 @@ class Config implements ArrayAccess
 	 * @return bool
 	 * @static
 	 */
-	public function __get($key) 
+	public function &__get($key) 
 	{
 		if(isset(self::$storage[$key])) {
 			return self::$storage[$key];
@@ -149,6 +163,12 @@ class Config implements ArrayAccess
 		
 		return null;
 		
+	}
+	
+	
+	public function __set($key, $val) 
+	{
+		self::$storage[$key] = $val;
 	}
 	
 	

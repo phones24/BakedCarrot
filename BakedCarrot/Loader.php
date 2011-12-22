@@ -5,8 +5,6 @@
  * Takes care of controllers loading
  *
  * @package BakedCarrot
- * @author Yury Vasiliev
- * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  * 
  */
 class Loader

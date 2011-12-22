@@ -5,14 +5,13 @@
  * Represents route object
  *
  * @package BakedCarrot
- * @author Yury Vasiliev
- * @license MIT License (http://www.opensource.org/licenses/mit-license.php) 
  * 
  */
 class Route
 {
 	private $params = array();
 	private $route_params = array();
+	private $pattern_regex = null;
 	
 
 	public function __construct($name, $pattern, $params = array())
@@ -24,28 +23,40 @@ class Route
 		$this->params['action'] = isset($this->params['action']) ? $this->params['action'] : 'index';
 	}
 
-	
+
 	public function __get($key)
 	{
 		return isset($this->params[$key]) ? $this->params[$key] : null;
 	}
-	
 
-	public function __set($key, $val)
-	{
-		$this->params[$key] = $val;
-	}
 
-	
 	public function __isset($key)
 	{
 		return isset($this->params[$key]);
 	}
 
+
+	public function getPatternRegex()
+	{
+		return $this->pattern_regex;
+	}
+	
 	
 	public function getParam($key)
 	{
 		return isset($this->route_params[$key]) ? $this->route_params[$key] : null;
+	}
+	
+	
+	public function getParams()
+	{
+		return $this->route_params;
+	}
+	
+	
+	public function getAcl()
+	{
+		return $this->acl;
 	}
 	
 	
@@ -59,8 +70,8 @@ class Route
 			throw new BakedCarrotException('Invalid action name "' . $this->action . '"');
 		}
 		
-		$this->raw_pattern = self::convertPatternToRegex($this->pattern);
-		$matched = @preg_match($this->raw_pattern, $uri_to_match, $matches);
+		$this->pattern_regex = self::convertPatternToRegex($this->pattern);
+		$matched = @preg_match($this->pattern_regex, $uri_to_match, $matches);
 		
 		if($matched === false) {
 			throw new BakedCarrotException('Route error: ' . $this->name);

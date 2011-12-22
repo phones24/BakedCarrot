@@ -5,8 +5,6 @@
  * Request handling class
  *
  * @package BakedCarrot
- * @author Yury Vasiliev
- * @license MIT License (http://www.opensource.org/licenses/mit-license.php) 
  * 
  */
  
@@ -75,7 +73,7 @@ class Request
 	{
 		if(is_null(self::$base_uri)) {
 			$request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF'];
-			$script_name = $_SERVER['SCRIPT_NAME'];
+			$script_name = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : null;
 			$base_uri = strpos($request_uri, $script_name) === 0 ? $script_name : str_replace('\\', '/', dirname($script_name));
 			
 			self::$base_uri = rtrim($base_uri, '/');
@@ -90,7 +88,7 @@ class Request
 		if(is_null(self::$uri)) {
 			$uri = '';
 			
-			if(!empty($_SERVER['PATH_INFO'])){
+			if(isset($_SERVER['PATH_INFO']) && !empty($_SERVER['PATH_INFO'])){
 				$uri = $_SERVER['PATH_INFO'];
 			} 
 			else {
@@ -151,7 +149,7 @@ class Request
 	
 	public static function getQueryString()
 	{
-		return strlen($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : null;
+		return isset($_SERVER['QUERY_STRING']) && strlen($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : null;
 	}
 
 	
@@ -170,5 +168,12 @@ class Request
 		return $_SERVER['HTTP_HOST'] == parse_url($_SERVER['HTTP_REFERER'], PHP_URL_HOST);
 	}
 
+	
+	public static function reset()
+	{
+		self::$headers = null;
+		self::$base_uri = null;
+		self::$uri = null;
+	}
 
 }	

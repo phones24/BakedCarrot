@@ -1,12 +1,9 @@
 <?php
 /**
- * BakedCarrot Database unit
+ * BakedCarrot database unit
  *
  * @package BakedCarrot
  * @subpackage Db
- * @author Yury Vasiliev
- *
- *
  * 
  */
  
@@ -51,16 +48,16 @@ class Db
 	{
 		self::connect();
 	
-		$sql = 'insert into `' . Db::clean($table) . '` (';
+		$sql = 'insert into ' . $table . ' (';
 		
 		$sql1 = '';
 		foreach($data as $field => $value) {
-			$sql1 .= '`' . Db::clean($field) . '`, ';
+			$sql1 .= $field . ', ';
 		}
 		
 		$sql .= substr($sql1, 0, -2) . ') values (';
 		$sql .= substr(str_repeat('?, ', count($data)), 0, -2) . ')';
-		
+
 		self::exec($sql, array_values($data));
 		
 		return self::$pdo->lastInsertId();
@@ -71,11 +68,11 @@ class Db
 	{
 		self::connect();
 
-		$sql = 'update `' . Db::clean($table) . '` set ';
+		$sql = 'update ' . $table . ' set ';
 		
 		$sql1 = '';
 		foreach($data_to_update as $field => $val) {
-			$sql1 .= '`' . Db::clean($field) . '` = ?, ';
+			$sql1 .= $field . ' = ?, ';
 		}
 		
 		$sql .= substr($sql1, 0, -2);
@@ -95,21 +92,19 @@ class Db
 	{
 		self::connect();
 	
-		$sql = 'delete from `' . Db::clean($table) . '`';
+		$sql = 'delete from ' . $table;
 		$sql .= !empty($where) ? ' where ' . $where : '';
 
 		return self::exec($sql, $values);
 	}
 
 
-	public static function getColumns($table, $refresh = false)
+	public static function &getColumns($table, $refresh = false)
 	{
 		self::connect();
 		
-		$table = Db::clean($table);
-		
 		if(!isset(self::$columns_meta[$table]) && !$refresh) {
-			$rows = Db::getAll('show columns from `' . $table . '`');
+			$rows = Db::getAll('show columns from ' . $table);
 			
 			foreach($rows as $row) {
 				self::$columns_meta[$table][$row['Field']] = $row;
@@ -166,12 +161,11 @@ class Db
 	}
 	
 	
-	public static function getAll($sql, array $values = null)
+	public static function &getAll($sql, array $values = null)
 	{
 		self::connect();
 
 		$result = array();
-		
 		$sth = self::$pdo->prepare($sql);
 		$sth->execute($values);
 		
@@ -193,16 +187,16 @@ class Db
 		return $sth->rowCount();
 	}
 
-
-	public static function clean($str)
-	{
-		return str_replace(' ', '', trim($str)); 
-	}
-
 	
 	public static function now()
 	{
 		return strftime("%Y-%m-%d %H:%M:%S"); 
+	}
+	
+	
+	public static function lastSql()
+	{
+		return self::$pdo->lastSql();
 	}
 }
 

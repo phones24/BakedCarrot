@@ -4,14 +4,8 @@
  *
  * @package BakedCarrot
  * @subpackage Auth
- * @author Yury Vasiliev
- * 
- *
- *
  * 
  */
-
-
 
 class AuthDB extends AuthDriver
 {
@@ -26,7 +20,7 @@ class AuthDB extends AuthDriver
 	
 	public function getUserByCredentials($login, $password)
 	{
-		$user = Orm::collection('user')->findOne('username = ? and password = ?', array($login, $password));
+		$user = Orm::collection('User')->where('username = ? and password = ?', array($login, $password))->findOne();
 	
 		return $user && $user->loaded() ? $user : null;
 	}
@@ -44,11 +38,11 @@ class AuthDB extends AuthDriver
 			$user->last_login = Db::now();
 			$user->store();
 			
-			$session = Orm::collection('session')->load();
+			$session = Orm::collection('Session')->load();
 			$session->user = $user;
 			$session->token = sha1(uniqid(rand(), true));
 			$session->store();
-
+			
 			Db::commit();
 		} 
 		catch(Exception $e) {
@@ -62,9 +56,9 @@ class AuthDB extends AuthDriver
 	
 	public function removeSession($token)
 	{
-		$session = Orm::collection('session')->findOne('token = ?', array($token));
+		$session = Orm::collection('Session')->where('token = ?', array($token))->findOne();
 		
-		Orm::collection('session')->delete($session);
+		Orm::collection('Session')->delete($session);
 	}
 	
 	
@@ -74,13 +68,13 @@ class AuthDB extends AuthDriver
 			return;
 		}
 		
-		Db::exec('delete from session where user_id = ?', array($user->getId()));
+		Db::delete('Session', 'user_id = ?', array($user->getId()));
 	}
 
 	
 	public function getUserByToken($token)
 	{
-		$session = Orm::collection('session')->findOne('token = ?', array($token));
+		$session = Orm::collection('Session')->where('token = ?', array($token))->findOne();
 		
 		return $session ? $session->user : null;
 	}
@@ -88,7 +82,7 @@ class AuthDB extends AuthDriver
 	
 	public function getAnonUser()
 	{
-		return Orm::collection('user')->findOne('username = ?', array($this->anon_name));
+		return Orm::collection('User')->where('username = ?', array($this->anon_name))->findOne();
 	}
 	
 	

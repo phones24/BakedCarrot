@@ -4,10 +4,6 @@
  *
  * @package BakedCarrot
  * @subpackage Auth
- * @author Yury Vasiliev
- * 
- *
- *
  * 
  */
 
@@ -49,7 +45,7 @@ class Auth extends Module
 	public function login($username, $password, $remember)
 	{
 		$user = $this->driver->getUserByCredentials($username, $this->hash($password));
-		
+
 		if(!$user) {
 			return false;
 		}
@@ -139,7 +135,7 @@ class Auth extends Module
 	public function hasAccessToRoute(Route $route)
 	{
 		if(!$this->getUser()) {
-			throw new AuthException('No logged in user');
+			return false;
 		}
 		
 		if(!isset($route->acl)) {

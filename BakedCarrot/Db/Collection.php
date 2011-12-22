@@ -4,122 +4,73 @@
  *
  * @package BakedCarrot
  * @subpackage Db
- * @author Yury Vasiliev
  *
  *
  * 
  */
  
-class Collection
+class Collection extends Query
 {
-	const PK = 'id';
-	private $table_name = '';
+	//private $_table = null;
+	//private $_primary_key = 'id';
+	private $model_info = null;
+	//private static $empty_models = null;
 	
 	
-	public function __construct($name)
+	public function __construct($model)
 	{
-		$this->table_name = Db::clean($name);
+		$this->model = $model;
+		$this->model_info = Orm::modelInfo($model);
+		
+		//$object = $this->createObject();
+
+		//$this->_table = $object->getTable();
+		//$this->_primary_key = $object->getPrimaryKey();
+		
+		// default query
+		$this->select('*')->from($this->model_info['table']);
+	}
+	
+/*	
+	public function getModelName()
+	{
+		return $this->model;
+	}
+
+	
+	public function getTable()
+	{
+		return $this->_table;
 	}
 	
 	
-	public function getTableName()
+	public function getPrimaryKey()
 	{
-		return $this->table_name;
+		return $this->_primary_key;
 	}
-	
+*/
 	
 	public function load($id = null)
 	{	
-		$row = array();
-	
-		if(!is_numeric($id) && !is_null($id)) {
-			throw new OrmException('Collection::load only accepts numeric parameter or null');
-		}
-	
+		$object = null;
+		
 		if(is_numeric($id)) {
-			$row = Db::getRow(
-					'select * from `' . $this->getTableName() . '` where ' . self::PK . ' = ?',
-					array($id)
-				);
+			$object = $this->
+				reset()->
+				select('*')->
+				from($this->model_info['table'])->
+				where($this->model_info['primary_key'] . ' = ?', array($id))->
+				findOne();
 		}
 		
-		return $this->createObject($row);
-	}
-	
-
-	public function find($where = null, array $values = null)
-	{
-		$sql = 'select * from `' . $this->getTableName() . '` ';
-		$sql .= !empty($where) ? 'where ' . $where : '';
-		
-		$result = array();
-		$rows = Db::getAll($sql, $values);
-		foreach($rows as $num => $row) {
-			$result[$row['id']] = $this->createObject($row);
+		if(!$object) {
+			$object = $this->createObject();
 		}
 		
-		return $result;
-	}
-
-	
-	public function findAll($where = null, array $values = null)
-	{
-		return $this->find($where, $values);
+		return $object;
 	}
 	
 	
-	public function findOne($where = null, array $values = null)
-	{
-		$sql = 'select * from `' . $this->getTableName() . '` ';
-		$sql .= !empty($where) ? 'where ' . $where : ' ';
-		$sql .= ' limit 1';
-		
-		$result = Db::getRow($sql, $values);
-		
-		return $result ? $this->createObject($result) : null;
-	}
-
-
-	public function findPaging($page, $count, $where = null, array $values = null)
-	{
-		if($count <= 0) {
-			throw new OrmException('$count cannot be less or equal zero in Collection::findPaging');
-		}
-		
-		$page = $page < 0 ? 1 : $page;
-		
-		$where = !$where ? '1' : $where;
-		$where .= ' limit ' . ($count * ($page - 1)) . ', ' . $count;
-		
-		return $this->findAll($where, $values);
-	}
-	
-	
-	public function count($where = null, array $values = null)
-	{
-		$sql = 'select count(*) from `' . $this->getTableName() . '` ';
-		$sql .= !empty($where) ? 'where ' . $where : ' ';
-
-		return Db::getCell($sql, $values);
-	}
-
-
-	public function delete(Model $object)
-	{
-		if(empty($object)) {
-			return;
-		}
-		
-		$object->runEvent('onBeforeDelete');
-
-		Db::delete($this->getTableName(), self::PK . ' = ?', array($object->getId()));
-		
-		$object->runEvent('onAfterDelete');
-		
-		unset($object);
-	}
-
-
 	public function swap(Model $object1, Model $object2, $property)
 	{
 		$old_property = $object1[$property];
@@ -132,13 +83,13 @@ class Collection
 	}
 
 	
-	final public function createObject($data = null)
+	static function loadModel($clsss)
 	{
-		$class = Orm::MODEL_CLASS_PREFIX . ucfirst($this->getTableName());
+		$class = ucfirst($clsss);
 		
 		if(!class_exists($class)) {
-			$files_to_try[] = $this->getTableName() . EXT;
-			$files_to_try[] = ucfirst($this->getTableName()) . EXT;
+			$files_to_try[] = $class . EXT;
+			$files_to_try[] = strtolower($class) . EXT;
 			
 			foreach($files_to_try as $file) {
 				if(is_file(MODELPATH . $file)) {
@@ -148,20 +99,43 @@ class Collection
 			}
 		}
 		
-		if(class_exists($class)) {
-			$object = new $class($this->getTableName(), $this);
+		return $class;
+	}
+
+	
+	final public function createObject($data = null)
+	{
+		$class = self::loadModel($this->model);
+	
+		//ucfirst($this->model);
+/*		
+		if(!class_exists($class)) {
+			$files_to_try[] = $class . EXT;
+			$files_to_try[] = strtolower($class) . EXT;
 			
-			if(!is_subclass_of($object, Orm::MODEL_BASE_CLASS)) {
-				throw new OrmException("Class $class is not subclass of " . Orm::MODEL_BASE_CLASS);
+			foreach($files_to_try as $file) {
+				if(is_file(MODELPATH . $file)) {
+					require MODELPATH . $file;
+					break;
+				}
 			}
 		}
+*/	
+		if(class_exists($class)) {
+			$object = new $class($this->model);
+			
+			if(!is_subclass_of($object, Orm::MODEL_BASE_CLASS) && get_class($object) != Orm::MODEL_BASE_CLASS) {
+				throw new OrmException("Class $class is not a subclass of " . Orm::MODEL_BASE_CLASS);
+			}
+			
+		}
 		else {
-			$class_name = Orm::MODEL_BASE_CLASS;
-			$object = new $class_name($this->getTableName(), $this);
+			$class = Orm::MODEL_BASE_CLASS;
+			$object = new $class($this->model);
 		}
 		
 		if(is_array($data) && !empty($data)) {
-			$object->loadData($data);
+			$object->hydrate($data);
 			$object->runEvent('onLoad');
 		}
 		else {
@@ -170,18 +144,13 @@ class Collection
 		
 		return $object;
 	}
-	
 
-	final public static function getRelationTable($table1, $table2)
+
+	final public function &info() 
 	{
-		$tables = array($table1, $table2);
-		
-		sort($tables);
-		
-		return implode('_', $tables);
+		return $this->model_info;
 	}
 	
-	
-	
 
+	
 }

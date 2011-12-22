@@ -1,4 +1,4 @@
 <?php
-class NotFoundException extends Exception
+class BakedCarrotException extends Exception
 {
 }

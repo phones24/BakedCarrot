@@ -5,24 +5,30 @@
  * Provides entity-related ORM functionality. All user models should inherits this class.
  * The objects of this class managed my Collection and should not be created manually.
  *	
+ *		<code>      
  *		$user = Orm::collection('user')->load(); // getting new user from collection
  *		$user->name = 'John'; // setting the property OOP-way
  *		$user['email'] = 'john@example.com'; // or as array
  *		$user->store(); // saving record to table "user"
+ *		</code>      
  *
  * @package BakedCarrot
  * @subpackage Db
- * @author Yury Vasiliev
- *
  * 
  */
 class Model implements ArrayAccess
 {
 	private $storage = null;
 	private $modified = false;
-	private $table_name = '';
 	private $collection = null;
 	private $columns_meta = null;
+	private $model_name = null;
+	protected $_table = null;
+	protected $_primary_key = 'id';
+	protected $_has_one = null;
+	protected $_has_many = null;
+	protected $_has_many_through = null;
+	protected $_belongs_to = null;
 	
 	
 	/**
@@ -32,12 +38,15 @@ class Model implements ArrayAccess
 	 * @param Collection $collection reference to owning collection 
 	 * @return void
 	 */
-	public function __construct($name, Collection $collection)
+	public function __construct($model_name)
 	{
-		$this->table_name = $name;
-		$this->collection = $collection;
+		$this->model_name = $model_name;
 		
-		$this->storage[Collection::PK] = 0;
+		if(!$this->_table) {
+			$this->_table = self::createTableFromModelName($model_name);
+		}
+		
+		$this->storage[$this->_primary_key] = 0;
 	}
 
 
@@ -47,9 +56,11 @@ class Model implements ArrayAccess
 	 * @param array $data data to be loaded
 	 * @return void
 	 */
-	public function loadData(array $data)
+	public function hydrate(array $data)
 	{
 		$this->storage = $data;
+		
+		$this->modified = false;
 	}
 	
 	
@@ -58,12 +69,12 @@ class Model implements ArrayAccess
 	 *
 	 * @return bool
 	 */
-	final public function loaded()
+	public function loaded()
 	{
-		return isset($this[Collection::PK]) && $this[Collection::PK] != 0;
+		return isset($this[$this->_primary_key]) && $this[$this->_primary_key] != 0;
 	}
 	
-
+	
 	/**
 	 * Returns primary key value of object
 	 *
@@ -71,18 +82,7 @@ class Model implements ArrayAccess
 	 */
 	public function getId()
 	{
-		return $this[Collection::PK];
-	}
-	
-
-	/**
-	 * Returns name of the table associated with the object
-	 *
-	 * @return string
-	 */
-	public function getTableName()
-	{
-		return $this->table_name;
+		return isset($this[$this->_primary_key]) ? $this[$this->_primary_key] : null;
 	}
 	
 	
@@ -92,15 +92,34 @@ class Model implements ArrayAccess
 	 * @param string $event_name name of the event to be executed
 	 * @return bool returns TRUE if event has been executed, FALSE otherwise
 	 */
-	final public function runEvent($event_name) 
+	public function runEvent($event_name) 
 	{
 		if(method_exists($this, $event_name)) {
-			$this->$event_name();
+			call_user_func(array($this, $event_name));
 			
 			return true;
 		}
 		
 		return false;
+	}
+	
+
+	/**
+	 * Returns the information about the model
+	 *
+	 * @return array
+	 */
+	public function info() 
+	{
+		return array(
+				'model'				=> $this->model_name,
+				'table'				=> $this->_table,
+				'primary_key'		=> $this->_primary_key,
+				'has_one'			=> $this->_has_one,
+				'has_many'			=> $this->_has_many,
+				'has_many_through'	=> $this->_has_many_through,
+				'belongs_to'		=> $this->_belongs_to,
+			);
 	}
 	
 
@@ -147,35 +166,45 @@ class Model implements ArrayAccess
 		
 		$this->modified = false;
 		
-		return $this[Collection::PK];
+		return $this->getId();
 	}
 	
 
+	/**
+	 * Updating record from object's properties
+	 *
+	 * @return void
+	 */
 	private function storeUpdate()
 	{
 		$values = array();
-		$real_field = Db::getColumns($this->getTableName());
+		$real_field = Db::getColumns($this->_table);
 
 		foreach($this->storage as $field_name => $field_val) {
-			if($field_name == Collection::PK || !isset($real_field[$field_name])) {
+			if($field_name == $this->_primary_key || !isset($real_field[$field_name])) {
 				continue;
 			}
 			
 			$values[$field_name] = $field_val;
 		}
 		
-		Db::update($this->getTableName(), 
+		Db::update($this->_table, 
 				$values, 
-				Collection::PK . ' = ?', 
+				$this->_primary_key . ' = ?', 
 				array($this->getId())
 			);
 	}
 	
 	
+	/**
+	 * Inserting new record using object's properties
+	 *
+	 * @return void
+	 */
 	private function storeInsert()
 	{
 		$values = array();
-		$real_field = Db::getColumns($this->getTableName());
+		$real_field = Db::getColumns($this->_table);
 
 		foreach($this->storage as $field_name => $field_val) {
 			if(!isset($real_field[$field_name])) {
@@ -185,10 +214,17 @@ class Model implements ArrayAccess
 			$values[$field_name] = $field_val;
 		}
 		
-		$this[Collection::PK] = Db::insert($this->getTableName(), $values);
+		$this[$this->_primary_key] = Db::insert($this->_table, $values);
 	}
 	
 	
+	/**
+	 * Import data from array to object's properties
+	 * @param array $source source array
+	 * @param $fields comma separated fields to be imported
+	 *
+	 * @return void
+	 */
 	public function import(array $source, $fields = null)
 	{
 		if(!empty($fields)) {
@@ -205,123 +241,289 @@ class Model implements ArrayAccess
 			$this->storage = array_merge($this->storage, $source);
 		}
 	}
-	
-	
-	public function related($related_table, $where = null, array $values = null)
-	{
-		$mm_table = Db::clean(Collection::getRelationTable($related_table, $this->getTableName()));
-		$related_table = Db::clean($related_table);
-		
-		$sql = 'select `' . $related_table . '`.* from `' . $mm_table . '`, `' . $related_table . '` ' .
-				'where ' . ($where ? $where . ' and ' : ' ') . 
-				'`' . $related_table . '`.' . Collection::PK . ' = `' . $mm_table . '`.' . $related_table . '_id and ' . 
-				'`' . $mm_table . '`.' . $this->getTableName() . '_id = ?';
-		
-		$values[] = $this->getId();
-		
-		$rows = Db::getAll($sql, $values);
-		
-		$result = null;
-		$new_collection = Orm::collection($related_table);
-		
-		foreach($rows as $row) {
-			$result[$row['id']] = $new_collection->createObject($row);
-		}
-		
-		return $result;
-	}
-	
-	
-	public function relatedOne($related_table, $where = null, array $values = null)
-	{
-		$mm_table = Db::clean(Collection::getRelationTable($related_table, $this->getTableName()));
-		$related_table = Db::clean($related_table);
-		
-		$sql = 'select `' . $related_table . '`.* from `' . $mm_table . '`, `' . $related_table . '` ' .
-				'where ' . ($where ? $where . ' and ' : ' ') . 
-				'`' . $related_table . '`.' . Collection::PK . ' = `' . $mm_table . '`.' . $related_table . '_id and ' . 
-				'`' . $mm_table . '`.' . $this->getTableName() . '_id = ? ' .
-				'limit 1';
 
-		$values[] = $this->getId();
 
-		if($row = Db::getRow($sql, $values)) {
-			return Orm::collection($related_table)->createObject($row);
-		}
-		
-		return null;
-	}
-	
-	
-	public function countRelated($related_table, $where = null, array $values = null)
+	/**
+	 * Remove the underlying record and clear the properties
+	 *
+	 * @return void
+	 */
+	public function delete()
 	{
-		$mm_table = Db::clean(Collection::getRelationTable($related_table, $this->getTableName()));
-		$related_table = Db::clean($related_table);
+		$this->runEvent('onBeforeDelete');
+
+		Db::delete($this->_table, $this->_primary_key . ' = ?', array($this->getId()));
 		
-		$sql = 'select count(*) from `' . $mm_table . '`, `' . $related_table . '` ' .
-				'where ' . ($where ? $where . ' and ' : ' ') . 
-				'`' . $related_table . '`.' . Collection::PK . ' = `' . $mm_table . '`.' . $related_table . '_id and ' . 
-				'`' . $mm_table . '`.' . $this->getTableName() . '_id = ?';
+		$this->runEvent('onAfterDelete');
 		
-		$values[] = $this->getId();
-		
-		return Db::getCol($sql, $values);
+		$this->storage = null;
+		$this->modified = false;
 	}
 
 
-	public function isRelated($object)
+	/**
+	 * Reloads record from database
+	 *
+	 * @return bool returns TRUE if records actully reloaded, FALSE if not
+	 */
+	public function reload()
 	{
-		$related_table = $object->getTableName();
-		$mm_table = Db::clean(Collection::getRelationTable($related_table, $this->getTableName()));
-
-		$sql = 'select id from `' . $mm_table . '` ' .
-			'where `' . $related_table . '_id`  = ? and `' . $this->getTableName() . '_id` = ?';
-		
-		return Db::getCell($sql, array($object->getId(), $this->getId())) ? true : false;
-	}
-
-
-	public function addRelation($object, array $extra_values = null)
-	{
-		if($this->isRelated($object)) {
+		if(!$this->loaded()) {
 			return false;
 		}
 		
+		$row = Db::getRow('select * from ' . $this->_table . ' where ' . $this->_primary_key . ' = ?', array($this->getId()));
+		
+		if(!$row) {
+			return false;
+		}
+		
+		$this->hydrate($row);
+		
+		return true;
+	}
+
+	
+	/**
+	 * Returns the array of objects connected with given object through many-to-many relationship
+	 * @param string $associated_class_name model name
+	 * @param string $join_table name of the relationship table
+	 * @param string $base_table_key name of the foreign key of base table
+	 * @param string $associated_table_key name of the foreign key of associated table
+	 *
+	 * @return array 
+	 */
+	public function hasManyThrough($associated_class_name, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	{
+		$associated_model_info = Orm::modelInfo($associated_class_name);
+		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
+		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
+		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_model_info['table'] . '_id';
+		
+		$query = new Query($associated_class_name);
+	
+		$query->
+			select($associated_model_info['table'] . '.*')->
+			from($join_table . ', ' . $associated_model_info['table'])->
+			where($associated_model_info['table'] . '.' . $associated_model_info['primary_key'] . ' = ' . $join_table . '.' . $associated_table_key . ' and ' . 
+				$join_table . '.' . $base_table_key . ' = ?', array($this->getId()));
+
+		return $query;
+	}
+	
+
+	public function hasMany($associated_class_name, $foreign_key = null)
+	{
+		$associated_model_info = Orm::modelInfo($associated_class_name);
+		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
+	
+		$query = new Query($associated_class_name);
+	
+		$query->
+			select('*')->
+			from($associated_model_info['table'])->
+			where($foreign_key . ' = ?', array($this->getId()));
+
+		return $query;
+	}
+	
+	
+	public function hasOne($associated_class_name, $foreign_key = null)
+	{
+		$associated_model_info = Orm::modelInfo($associated_class_name);
+		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
+		
+		$query = new Query($associated_class_name);
+	
+		$query->
+			select('*')->
+			from($associated_model_info['table'])->
+			where($foreign_key . ' = ?', array($this->getId()));
+
+		return $query;
+	}
+
+
+	public function belongsTo($associated_class_name, $foreign_key = null)
+	{
+		$associated_model_info = Orm::modelInfo($associated_class_name);
+		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
+		
+		$query = new Query($associated_class_name);
+
+		$query->
+			select('*')->
+			from($associated_model_info['table'])->
+			where($associated_model_info['primary_key'] . ' = ?', array($this[$foreign_key]));
+		
+		return $query;
+	}
+	
+
+	public function owns($object, $foreign_key = null)
+	{
+		$associated_model_info = $object->info();
+		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
+		
+		$result = Db::getCell('select count(*) from ' . $associated_model_info['table'] . 
+				' where ' . $foreign_key . ' = ?', array($this->getId()));
+
+		return (bool)$result;
+	}
+	
+	
+	public function ownsThrough($object, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	{
+		$associated_model_info = $object->info();
+		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_model_info['table'] . '_id';
+		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
+		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
+		
+		$sql = 'select count(*) from ' . $join_table . ' ' . 
+				'where ' . $base_table_key . ' = ? and ' . $associated_table_key . ' = ?';
+		
+		$result = Db::getCell($sql, array($this->getId(), $object->getId()));
+		
+		return (bool)$result;
+	}
+	
+/*	
+	public function isBelongTo($object, $base_table_key = null)
+	{
+		$associated_table = $object->getTable();
+		$associated_table_pk = $object->getPrimaryKey();
+		$base_table_key = $base_table_key ? $base_table_key : $object->getTable() . '_id';
+		
+		$result = Db::getCell('select count(*) from ' . $associated_table . 
+				' where ' . $associated_table_pk . ' = ?', array($this[$base_table_key]));
+
+		return (bool)$result;
+	}
+*/	
+	//$session->linkTo($user)
+	public function linkTo($object, $foreign_key = null)
+	{
+		if(!$object->loaded() || !$this->loaded()) {
+			return false;
+		}
+		
+		if($object->owns($this)) {
+			return false;
+		}
+		
+		$associated_model_info = $object->info();
+		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
+
+		Db::update($this->_table, array($foreign_key => $object->getId()), 'id = ?', array($this->getId()));
+		
+		return $this->reload();
+	}
+
+	
+	public function unlinkFrom($object, $foreign_key = null)
+	{
+		if(!$object->loaded() || !$this->loaded()) {
+			return false;
+		}
+		
+		$associated_model_info = $object->info();
+		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
+
+		Db::update($this->_table, array($foreign_key => null), 'id = ?', array($this->getId()));
+		
+		return $this->reload();
+	}
+
+	
+	public function attach($object, $foreign_key = null)
+	{
 		if(!$this->loaded()) {
-			throw new OrmException('Cannot establish relation with non existent entity of class "' . get_class($this) . '"');
+			return false;
 		}
 		
-		$related_table = $object->getTableName();
-		$mm_table = Db::clean(Collection::getRelationTable($related_table, $this->getTableName()));
-		
-		$values = array($related_table . '_id' => $object->getId(), $this->getTableName() . '_id' => $this->getId());
-		
-		if(is_array($extra_values)) {
-			$values = array_merge($values, $extra_values);
+		if($this->owns($object)) {
+			return false;
 		}
 		
-		return Db::insert($mm_table, $values);
-	}
+		$associated_model_info = $object->info();
+		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
 
-
-	public function removeRelation($object)
-	{
-		$related_table = $object->getTableName();
-		$mm_table = Db::clean(Collection::getRelationTable($related_table, $this->getTableName()));
+		Db::update($associated_model_info['table'], array($foreign_key => $this->getId()), 'id = ?', array($object->getId()));
 		
-		return Db::delete($mm_table, $related_table . '_id = ? and ' . $this->getTableName() . '_id = ?', array($object->getId(), $this->getId()));
+		return $this->reload();
 	}
 
-
-	public function clearRelations($related_table)
+	
+	public function attachThrough($object, $join_table = null, $base_table_key = null, $associated_table_key = null)
 	{
-		$mm_table = Db::clean(Collection::getRelationTable($related_table, $this->getTableName()));
+		if(!$this->loaded()) {
+			return false;
+		}
 		
-		return Db::delete($mm_table, $this->getTableName() . '_id = ?', array($this->getId()));
+		if($this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
+			return false;
+		}
+		
+		$associated_model_info = $object->info();
+		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_model_info['table'] . '_id';
+		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
+		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
+
+		Db::insert($join_table, array($base_table_key => $this->getId(), $associated_table_key => $object->getId()));
+		
+		return true;
+	}
+	
+	
+	public function unattach($object, $foreign_key = null)
+	{
+		if(!$this->loaded()) {
+			return false;
+		}
+		
+		if(!$this->owns($object)) {
+			return false;
+		}
+		
+		$associated_model_info = $object->info();
+		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
+
+		Db::update($associated_model_info['table'], array($foreign_key => null), 'id = ?', array($object->getId()));
+		
+		return $this->reload();
 	}
 
+	
+	public function unattachThrough($object, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	{
+		if(!$this->loaded()) {
+			return false;
+		}
+		
+		if(!$this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
+			return false;
+		}
+		
+		$associated_model_info = $object->info();
+		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_model_info['table'] . '_id';
+		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
+		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
+	
+		return Db::delete($join_table, $base_table_key . ' = ? and ' . $associated_table_key . ' = ?', array($this->getId(), $object->getId()));
+	}
+	
+	
+	public function clearRelations($associated_class_name, $join_table = null, $base_table_key = null)
+	{
+		$associated_model_info = Orm::modelInfo($associated_class_name);
+		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
+		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
+		
+		return Db::delete($join_table, $base_table_key . ' = ?', array($this->getId()));
+	}
+	
 
-	final public function offsetSet($offset, $value) 
+	public function offsetSet($offset, $value) 
 	{
 		$this->modified = true;
 
@@ -334,57 +536,147 @@ class Model implements ArrayAccess
 	}
 	
 	
-	final public function offsetExists($offset) 
+	public function offsetExists($offset) 
 	{
 		return isset($this->storage[$offset]);
 	}
 	
 	
-	final public function offsetUnset($offset) 
+	public function offsetUnset($offset) 
 	{
 		unset($this->storage[$offset]);
 	}
 	
 	
-	final public function offsetGet($offset) 
+	public function offsetGet($offset) 
 	{
 		return isset($this->storage[$offset]) ? $this->storage[$offset] : null;
 	}
 	
 	
-	final public function __isset($key)
+	public function __isset($key)
 	{
-		return isset($this->storage[$key]);
+		return isset($this->_has_many[$key]) || isset($this->_has_many_through[$key]) || 
+				isset($this->_belongs_to[$key]) || isset($this->_has_one[$key]) || 
+				isset($this->storage[$key]);
 	}
 	
+	
+	public function __get($key)
+	{
+		if(isset($this->_has_many[$key]) && isset($this->_has_many[$key]['model'])) {
+			$result = $this->hasMany($this->_has_many[$key]['model'], isset($this->_has_many[$key]['foreign_key']) ? $this->_has_many[$key]['foreign_key'] : null);
+			
+			foreach(array('where', 'order', 'limit', 'offset') as $avail_params) {
+				if(isset($this->_has_many[$key][$avail_params])) {
+					call_user_func(array($result, $avail_params), $this->_has_many[$key][$avail_params]);
+				}
+			}
 
-	final public function __get($key)
-	{
-		if(isset($this->storage[$key . '_id'])) {
-			if(isset($this->storage[$key]) && is_object($key) && @is_a($key, Orm::MODEL_BASE_CLASS)) {
-				return $key;
-			}
-			else {
-				$this->storage[$key] = Orm::collection($key)->load($this->storage[$key . '_id']);
-				
-				return $this->storage[$key];
-			}
+			return $result->findAll();
 		}
-	
-		return isset($this->storage[$key]) ? $this->storage[$key] : null;
+		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['model'])) {
+			$result = $this->hasManyThrough($this->_has_many_through[$key]['model'], 
+					isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
+					isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null,
+					isset($this->_has_many_through[$key]['associated_table_key']) ? $this->_has_many_through[$key]['associated_table_key'] : null
+				);
+			
+			foreach(array('where', 'order', 'limit', 'offset') as $avail_params) {
+				if(isset($this->_has_many_through[$key][$avail_params])) {
+					call_user_func(array($result, $avail_params), $this->_has_many_through[$key][$avail_params]);
+				}
+			}
+
+			return $result->findAll();
+		}
+		elseif(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model'])) {
+			$result = $this->hasOne($this->_has_one[$key]['model'], isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : null);
+			
+			foreach(array('where', 'order', 'offset') as $avail_params) {
+				if(isset($this->_has_one[$key][$avail_params])) {
+					call_user_func(array($result, $avail_params), $this->_has_one[$key][$avail_params]);
+				}
+			}
+
+			return $result->findOne();
+		}
+		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model'])) {
+			$result = $this->belongsTo($this->_belongs_to[$key]['model'], isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : null);
+			
+			foreach(array('where', 'order', 'offset') as $avail_params) {
+				if(isset($this->_belongs_to[$key][$avail_params])) {
+					call_user_func(array($result, $avail_params), $this->_belongs_to[$key][$avail_params]);
+				}
+			}
+
+			return $result->findOne();
+		}
+		else {
+			return isset($this->storage[$key]) ? $this->storage[$key] : null;
+		}
 	}
 	
 	
-	final public function __set($key, $val)
+	public function __set($key, $val)
 	{
 		$this->modified = true;
 		
-		if(is_object($val) && @is_a($val, Orm::MODEL_BASE_CLASS)) {
-			$this->storage[$key . '_id'] = $val->getId();
+		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model']) && 
+				is_object($val) && get_class($val) == $this->_has_one[$key]['model']) {
+			
+			$model_info = $val->info();
+			$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $model_info['table'] . '_id';
+			$this->storage[$field] = $val->getId();
 		}
-		
-		$this->storage[$key] = $val;
+		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model']) && 
+				is_object($val) && get_class($val) == $this->_belongs_to[$key]['model']) {
+			
+			$model_info = $val->info();
+			$field = isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : $model_info['table'] . '_id';
+			$this->storage[$field] = $val->getId();
+		}
+		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['model'])) {
+			
+			$this->clearRelations($this->_has_many_through[$key]['model']);
+			
+			if(is_array($val)) {
+				foreach($val as $num => $object) {
+					if(is_numeric($object)) {
+						$model_info = Orm::modelInfo($this->_has_many_through[$key]['model']);
+						$object = Orm::collection($this->_has_many_through[$key]['model'])->createObject(array($model_info['primary_key'] => $object));
+					}
+					
+					if(is_object($object) && get_class($object) == $this->_has_many_through[$key]['model']) {
+						$this->attachThrough(
+								$object, 
+								isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
+								isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null,
+								isset($this->_has_many_through[$key]['associated_table_key']) ? $this->_has_many_through[$key]['associated_table_key'] : null
+							);
+					}
+				}
+			}
+		}
+		else {
+			$this->storage[$key] = $val;
+		}
 	}
 	
+
+	public static function createJoinTable($table1, $table2)
+	{
+		$tables = array($table1, $table2);
+		
+		sort($tables);
+		
+		return implode('_', $tables);
+	}
+
+
+	public static function createTableFromModelName($model_name)
+	{
+		return strtolower(preg_replace("/([a-z])([A-Z])/", "\\1_\\2", $model_name));
+	}
 	
 }

@@ -8,6 +8,21 @@
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
+ 
+// checking that all constants are defined
+if(!defined('DOCROOT')) {
+	trigger_error('DOCROOT constant is not defined', E_USER_ERROR);
+}
+
+if(!defined('SYSPATH')) {
+	trigger_error('SYSPATH constant is not defined', E_USER_ERROR);
+}
+
+if(!defined('APPPATH')) {
+	trigger_error('APPPATH constant is not defined', E_USER_ERROR);
+}
+
+ 
 // version of library
 define('BAKEDCARROT_VERSION', '0.3');
 
@@ -164,11 +179,11 @@ class App
 			}
 		}
 		catch(Exception $e) {
-			self::handleDefaultException($e);
+			self::$instance->handleDefaultException($e);
 		}
 	}
 	
-
+	
 	/**
 	 * Sends response with HTTP redirect
 	 *
@@ -259,22 +274,32 @@ class App
 	{
 		Log::out(get_class($e) . ', ' . $e->getMessage(), Log::LEVEL_CRIT);
 		
-		if($_SERVER['HTTP_USER_AGENT'] == 'Shockwave Flash') {
+		if(php_sapi_name() == 'cli') {
+			print "\n" . get_class($e) . " occured\n" .
+				'Message: ' . $e->getMessage() . "\n" .
+				'Code: ' . $e->getCode() . "\n" .
+				$e->getTraceAsString() . "\n";
+				
+		}
+		elseif(isset($_SERVER['HTTP_USER_AGENT']) && $_SERVER['HTTP_USER_AGENT'] == 'Shockwave Flash') {
 			print 'EXCEPTION (' . get_class($e) . '): ' . $e->getMessage();
 		}
 		else {
-			header('HTTP/1.1 500 Internal Server Error');
+			if(!headers_sent()) {
+				header('HTTP/1.1 500 Internal Server Error');
+			}
 			
 			print '<html><head></head><body style="font: 10pt arial; margin: 30px;">' .
 				'<h1><em>' . get_class($e) . '</em> occured</h1>' . 
 				'<h3 style="margin: 0;">Message: ' . $e->getMessage() . '</h3>' .
 				'<h3 style="margin: 0;">Code: ' . $e->getCode() . '</h3>' .
+				(self::isDevMode() && get_class($e) == 'PDOException' ? '<h3 style="margin: 0;">SQL: ' . Db::lastSql() . '</h3>' : '') .
 				(self::isDevMode() ? '<p>' . nl2br($e->getTraceAsString()) . '</p>' : '') .
 				'<h4><em>Baked Carrot ver ' . BAKEDCARROT_VERSION . '</em></h4>' .
 				'</body>';
 		}
 		
-		exit;
+		return;
 	}
 
 	
@@ -333,7 +358,9 @@ class App
 	/**
 	 * Sets the handler for certain exception
 	 *
+	 *		<code>
 	 *		App::setExceptionHandler('NotFoundException', 'exception_handler');
+	 *		</code>
 	 * 
 	 * "handlerExceptionName" must be defined in controller
 	 *
@@ -351,7 +378,9 @@ class App
 	/**
 	 * Loads the module and returns created object
 	 *
+	 *		<code>
 	 *		$auth = App::module('auth');
+	 *		</code>
 	 * 
 	 * @param $module name of the module
 	 * @param $params array with module parameters
@@ -427,7 +456,7 @@ class App
 	 */
 	public static function autoload($class)
 	{
-		// try SYSPATH first
+		// try SYSPATH
 		if(is_file(SYSPATH . $class . EXT)) {
 			require(SYSPATH . $class . EXT);
 			return;
@@ -466,5 +495,12 @@ class App
 		
 		return null;
 	}
+	
+	
+	public static function initialized()
+	{
+		return !is_null(self::$instance);
+	}
+	
 }
 

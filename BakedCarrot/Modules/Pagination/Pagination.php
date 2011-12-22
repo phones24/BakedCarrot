@@ -4,11 +4,6 @@
  *
  * @package BakedCarrot
  * @subpackage Pagination
- * @author Yury Vasiliev
- * @version 0.3
- *
- *
- * 
  */
 class Pagination extends Module
 {
@@ -24,11 +19,11 @@ class Pagination extends Module
 
 	public function __construct(array $params = null)
 	{
-		if(!($this->rows_count = $this->loadParam('rows_count', $params))) {
+		if(($this->rows_count = $this->loadParam('rows_count', $params)) === null) {
 			throw new BakedCarrotException('"rows_count" is not defined');
 		}
 		
-		if(!($this->total_count = $this->loadParam('total_count', $params))) {
+		if(($this->total_count = $this->loadParam('total_count', $params)) === null) {
 			throw new BakedCarrotException('"total_count" is not defined');
 		}
 
@@ -127,6 +122,12 @@ class Pagination extends Module
 	public function getRowsCount()
 	{
 		return $this->rows_count;
+	}
+	
+	
+	public function getOffset()
+	{
+		return ($this->page - 1) * $this->rows_count;
 	}
 	
 	

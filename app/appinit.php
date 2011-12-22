@@ -3,7 +3,6 @@
  * BakedCarrot application initialization file 
  *
  * @package BakedCarrot
- * @author Yury Vasiliev
  * 
  *
  *
@@ -20,7 +19,7 @@ require SYSPATH . 'App.php';
 
 // init
 App::create(array(
-		'config'		=> DOCROOT . 'config.php',
+		'config'		=> APPPATH . 'config.php',
 		'mode'			=> App::MODE_DEVELOPMENT, //Application::MODE_PRODUCTION,
 	));
 

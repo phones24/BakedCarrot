@@ -4,9 +4,6 @@
  * 
  *
  * @package BakedCarrot
- * @author Yury Vasiliev
- * @license MIT License (http://www.opensource.org/licenses/mit-license.php) 
- * 
  */
 class Router
 {
@@ -30,9 +27,7 @@ class Router
 	
 	public static function getMatchedRoute($trailing_slash = false)
 	{
-		if(is_null(self::$matched_route)) {
-			self::$matched_route = self::getRouteByUri(Request::getUri() . ($trailing_slash ? '/' : ''));
-		}
+		self::$matched_route = self::getRouteByUri(Request::getUri() . ($trailing_slash ? '/' : ''));
 		
 		return self::$matched_route;
 	}
@@ -56,6 +51,13 @@ class Router
 	public static function getRouteByName($name)
 	{
 		return isset(self::$routes[$name]) ? self::$routes[$name] : null;
+	}
+	
+	
+	public static function reset()
+	{
+		self::$routes = array();
+		self::$matched_route = null;
 	}
 	
 }	
