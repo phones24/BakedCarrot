@@ -26,51 +26,8 @@ Notable features of BakedCarrot:
 
 
 
-## Setup
+## Official website
 
-
-### Simple setup
-
-Place `BakedCarrot`, `app`, `.htaccess` and `index.php` to your hosting root directory
-
-Now try to access you website through the browser. You should see something like this:
-
-	Hello!
-	
-That's it!
-
-
-### Setting up directories, different from defaults
-
-Change these defines in `index.php`:
-	
-* `DOCROOT` - document root, better not to touch
-* `SYSPATH` - path to system files
-* `APPPATH` - path to application files
-* `TMPPATH` - path to temporary storage, usually used for template cache
-	
-For example, if you want your application in `Application` directory, instead of `app`, then `APPPATH` should be looking like this:
-
-	define('APPPATH', DOCROOT . 'Application' . DIRECTORY_SEPARATOR);
-
-	
-### Setting up database connection
-
-The easiest way to setup database connection is to place all connection parameters in configuration file.
-
-Edit `config.php` to something like this:
-
-	<?php return array(
-			'db_dsn'		=> 'mysql:dbname=bakedcarrot;host=localhost',
-			'db_username'	=> 'bakedcarrot', 
-			'db_password'	=> 'password'
-		);
-
-Consult PHP documentation if you're having trouble creating valid DSN string.
-
-Now, all configuration parameters from `config.php` are avaliable in your application.
-
-
-
+Please go to http://bakedcarrot.org for more information about the framework, documentation and examples.
 
 
