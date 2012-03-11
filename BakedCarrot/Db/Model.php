@@ -23,6 +23,7 @@ class Model implements ArrayAccess
 	private $collection = null;
 	private $columns_meta = null;
 	private $model_name = null;
+	private $ft_cache = null;
 	protected $_table = null;
 	protected $_primary_key = 'id';
 	protected $_has_one = null;
@@ -149,6 +150,8 @@ class Model implements ArrayAccess
 	 */
 	public function store()
 	{
+		$this->runEvent('onBeforeStore');
+		
 		if($this->getId() > 0) {
 			$this->runEvent('onBeforeUpdate');
 			
@@ -164,6 +167,8 @@ class Model implements ArrayAccess
 			$this->runEvent('onAfterInsert');
 		}
 		
+		$this->runEvent('onAfterStore');
+
 		$this->modified = false;
 		
 		return $this->getId();
@@ -565,6 +570,10 @@ class Model implements ArrayAccess
 	public function __get($key)
 	{
 		if(isset($this->_has_many[$key]) && isset($this->_has_many[$key]['model'])) {
+			if(isset($this->_has_many[$key]['cached']) && $this->_has_many[$key]['cached'] && isset($this->ft_cache[$key])) {
+				return $this->ft_cache[$key];
+			}
+				
 			$result = $this->hasMany($this->_has_many[$key]['model'], isset($this->_has_many[$key]['foreign_key']) ? $this->_has_many[$key]['foreign_key'] : null);
 			
 			foreach(array('where', 'order', 'limit', 'offset') as $avail_params) {
@@ -573,9 +582,18 @@ class Model implements ArrayAccess
 				}
 			}
 
+			if(isset($this->_has_many[$key]['cached']) && $this->_has_many[$key]['cached']) {
+				$this->ft_cache[$key] = $result->findAll();
+				return $this->ft_cache[$key];
+			}
+			
 			return $result->findAll();
 		}
 		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['model'])) {
+			if(isset($this->_has_many_through[$key]['cached']) && $this->_has_many_through[$key]['cached'] && isset($this->ft_cache[$key])) {
+				return $this->ft_cache[$key];
+			}
+			
 			$result = $this->hasManyThrough($this->_has_many_through[$key]['model'], 
 					isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
 					isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null,
@@ -588,9 +606,18 @@ class Model implements ArrayAccess
 				}
 			}
 
+			if(isset($this->_has_many_through[$key]['cached']) && $this->_has_many_through[$key]['cached']) {
+				$this->ft_cache[$key] = $result->findAll();
+				return $this->ft_cache[$key];
+			}
+			
 			return $result->findAll();
 		}
 		elseif(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model'])) {
+			if(isset($this->_has_one[$key]['cached']) && $this->_has_one[$key]['cached'] && isset($this->ft_cache[$key])) {
+				return $this->ft_cache[$key];
+			}
+			
 			$result = $this->hasOne($this->_has_one[$key]['model'], isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : null);
 			
 			foreach(array('where', 'order', 'offset') as $avail_params) {
@@ -599,9 +626,18 @@ class Model implements ArrayAccess
 				}
 			}
 
+			if(isset($this->_has_one[$key]['cached']) && $this->_has_one[$key]['cached']) {
+				$this->ft_cache[$key] = $result->findOne();
+				return $this->ft_cache[$key];
+			}
+			
 			return $result->findOne();
 		}
 		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model'])) {
+			if(isset($this->belongsTo[$key]['cached']) && $this->belongsTo[$key]['cached'] && isset($this->ft_cache[$key])) {
+				return $this->ft_cache[$key];
+			}
+			
 			$result = $this->belongsTo($this->_belongs_to[$key]['model'], isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : null);
 			
 			foreach(array('where', 'order', 'offset') as $avail_params) {
@@ -610,6 +646,11 @@ class Model implements ArrayAccess
 				}
 			}
 
+			if(isset($this->_belongs_to[$key]['cached']) && $this->_belongs_to[$key]['cached']) {
+				$this->ft_cache[$key] = $result->findOne();
+				return $this->ft_cache[$key];
+			}
+			
 			return $result->findOne();
 		}
 		else {
@@ -660,6 +701,11 @@ class Model implements ArrayAccess
 		}
 		else {
 			$this->storage[$key] = $val;
+		}
+		
+		// reset the cache
+		if(isset($this->ft_cache[$key])) {
+			unset($this->ft_cache[$key]);
 		}
 	}
 	

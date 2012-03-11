@@ -4,9 +4,6 @@
  *
  * @package BakedCarrot
  * @subpackage View
- * @author Yury Vasiliev
- *
- *
  * 
  */
 abstract class ViewBase 

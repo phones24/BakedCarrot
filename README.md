@@ -8,7 +8,7 @@ Notable features of BakedCarrot:
 
 * MVC compilant
 * Built in simple database module, based on PDO
-* Built in simple ORM module with collection support
+* Built in ORM module with collections support
 * Powerfull routing
 * Custom exception and error handling
 * Useful modules/extension
@@ -31,7 +31,7 @@ Notable features of BakedCarrot:
 
 ### Simple setup
 
-Place `BakedCarrot`, `app`, `.htaccess`, `config.php`, `appinit.php` and `index.php` to your hosting root directory
+Place `BakedCarrot`, `app`, `.htaccess` and `index.php` to your hosting root directory
 
 Now try to access you website through the browser. You should see something like this:
 
@@ -54,41 +54,6 @@ For example, if you want your application in `Application` directory, instead of
 	define('APPPATH', DOCROOT . 'Application' . DIRECTORY_SEPARATOR);
 
 	
-### Setting up several applications in separate sub-directories
-
-You can setup several applications per hosting and have only one copy of library.
-Assume we want to have one main application accessed from the root directory and two others named `app2` and `app3`.
-Our root directory should be looking like this:
-	
-	app
-	app2
-	app3
-	BakedCarrot
-	.htaccess
-	appinit.php
-	config.php
-	index.php
-
-Copy `app`, `.htaccess`, `appinit.php` and `index.php` to `app2` directory.
-	
-	app2/app
-	app2/.htaccess
-	app2/appinit.php
-	app2/config.php
-	app2/index.php
-
-
-Add `RewriteBase` directive to `.htaccess` that corresponds current location:
-	
-	RewriteBase /app2/
-
-Edit `app2/appinit.php` and change `SYSPATH` to something like this:
-
-	define('SYSPATH', DOCROOT . '../BakedCarrot' . DIRECTORY_SEPARATOR);	
-	
-Now do the same for `app3` and you can access the application with `/app2/` and `/app3/`
-
-
 ### Setting up database connection
 
 The easiest way to setup database connection is to place all connection parameters in configuration file.

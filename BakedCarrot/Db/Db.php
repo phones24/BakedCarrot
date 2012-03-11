@@ -196,6 +196,10 @@ class Db
 	
 	public static function lastSql()
 	{
+		if(!self::$pdo) {
+			return null;
+		}
+
 		return self::$pdo->lastSql();
 	}
 }

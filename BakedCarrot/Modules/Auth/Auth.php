@@ -44,7 +44,7 @@ class Auth extends Module
 
 	public function login($username, $password, $remember)
 	{
-		$user = $this->driver->getUserByCredentials($username, $this->hash($password));
+		$user = $this->driver->getUserByCredentials($username, App::hash($password));
 
 		if(!$user) {
 			return false;
@@ -53,10 +53,10 @@ class Auth extends Module
 		$token = $this->driver->createSession($user);
 
 		if($remember) {
-			$ret = setcookie($this->session_name, $token, time() + $this->session_lifetime, '/');
+			$ret = App::setCookie($this->session_name, $token, time() + $this->session_lifetime);
 		}
 		else {
-			$ret = setcookie($this->session_name, $token, 0, '/');
+			$ret = App::setCookie($this->session_name, $token, 0);
 		}
 		
 		if(!$ret) {
@@ -73,9 +73,10 @@ class Auth extends Module
 			return;
 		}
 		
-		$this->driver->removeSession($_COOKIE[$this->session_name]);
+		$token = App::getCookie($this->session_name);
+		$this->driver->removeSession($token);
 		
-		setcookie($this->session_name, null, time() - 6000000, '/');
+		App::deleteCookie($this->session_name);
 	}
 
 	
@@ -109,7 +110,8 @@ class Auth extends Module
 			$this->user = $this->getAnonUser();
 		}
 		elseif(isset($_COOKIE[$this->session_name])) {
-			$this->user = $this->driver->getUserByToken($_COOKIE[$this->session_name]);
+			$token = App::getCookie($this->session_name);
+			$this->user = $this->driver->getUserByToken($token);
 
 			if(!$this->user && $this->anon_login) {
 				$this->user = $this->getAnonUser();
@@ -145,7 +147,7 @@ class Auth extends Module
 		return $this->driver->userHasRole($this->getUser(), $route->acl);
 	}
 	
-
+/*
 	public function hash($string)
 	{
 		if(!($auth_hash_key = $this->loadParam('hash_key'))) {
@@ -154,6 +156,6 @@ class Auth extends Module
 
 		return hash_hmac('sha256', $string, $auth_hash_key);
 	}
-	
+*/	
 	
 }

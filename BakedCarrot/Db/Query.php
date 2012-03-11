@@ -185,8 +185,6 @@ class Query
 				case 'from':
 					if(!in_array('select', $prev_stmts) && !in_array('delete', $prev_stmts)) {
 						
-						print_r($prev_stmts);
-					
 						throw new OrmException('Error in query: "select" statement is missing');
 					}
 					

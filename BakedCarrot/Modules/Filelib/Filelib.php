@@ -200,7 +200,7 @@ class Filelib extends Module
 		$orig_file = realpath($this->getCurrentDir() . $file);
 		$pathinfo_orig = pathinfo($orig_file);	
 		
-		if(!isset($pathinfo_orig['dirname']) || !$this->isValidDir($pathinfo_orig['dirname'])) {
+		if(!isset($pathinfo_orig['dirname'])) {
 			throw new FilelibException('Invalid file path: ' . $orig_file);
 		}
 		

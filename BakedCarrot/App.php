@@ -107,6 +107,22 @@ class App
 
 	
 	/**
+	 * MCRYPT cipher
+	 * @var int
+	 * @static
+	 */
+	private static $mcrypt_cipher = MCRYPT_RIJNDAEL_256;
+	
+	
+	/**
+	 * MCRYPT mode
+	 * @var int
+	 * @static
+	 */
+	private static $mcrypt_mode = MCRYPT_MODE_ECB;
+	
+	
+	/**
 	 * Private constructor
 	 *
 	 * @return void
@@ -315,10 +331,10 @@ class App
 	 * @return bool
 	 * @static
 	 */
-	public static function handleErrors($errno, $errstr, $errfile = '', $errline = 0, $errcontext = array())
+	public static function handleErrors($errno, $errstr)
 	{
 		if(error_reporting() & $errno) {
-			throw new BakedCarrotException($errstr, $errno, 0, $errfile, $errline);
+			throw new BakedCarrotException($errstr, $errno);
 		}
 		
 		return true;
@@ -497,10 +513,138 @@ class App
 	}
 	
 	
+	/**
+	 * Check if the application initialised
+	 *
+	 * @return bool 
+	 * @static
+	 */
 	public static function initialized()
 	{
 		return !is_null(self::$instance);
 	}
 	
+	
+	/**
+	 * Set the encrypted cookie
+	 *
+	 * @param string $key name of the cookie
+	 * @param string $val value of the cookie
+	 * @param integer $exp expiration time
+     * @param string $path cookie path
+     * @param string $domain cookie domain
+     * @param bool $secure sends the cookie only for SSL connection
+     * @param bool $httponly cookie only accessible throught plain HTTP connection
+	 * @return bool operation result
+	 * @static
+	 */
+	public static function setCookie($key, $val, $exp = 0, $path = '/', $domain = '', $secure = false, $httponly = false)
+	{
+		$cookie_secret = Config::getVar('secret_key');
+		
+		if(!$cookie_secret) {
+			throw new BakedCarrotException('Cannot set cookie without "secret_key" parameter');
+		}
+
+		$cookie_hash = App::hash($key . $val . $cookie_secret); 
+		
+		if(extension_loaded('mcrypt')) {
+			$iv_size = mcrypt_get_iv_size(self::$mcrypt_cipher, self::$mcrypt_mode);
+			$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+			$crypted_val = mcrypt_encrypt(self::$mcrypt_cipher, $cookie_secret, $val, self::$mcrypt_mode, $iv);
+			$val = trim(base64_encode($crypted_val));
+		}
+		
+		$val = $cookie_hash . '~~' . $val;
+		
+		return setcookie($key, $val, $exp, $path, $domain, $secure, $httponly);
+	}
+	
+	
+	/**
+	 * Get cookie value
+	 *
+	 * @param string $key name of the cookie
+	 * @return string|false cookie valuie or false if cookie is invalid or doesn't exists
+	 * @static
+	 */
+	public static function getCookie($key)
+	{
+		if(!isset($_COOKIE[$key])) {
+			return false;
+		}
+		
+		$cookie_val = $_COOKIE[$key];
+
+		if(strpos($cookie_val, '~~') !== false) {
+			list($cookie_hash, $cookie_val) = explode('~~', $cookie_val);
+			
+			if(!strlen($cookie_hash) && !strlen($cookie_val)) {
+				return false;
+			}
+
+			$cookie_secret = Config::getVar('secret_key');
+			
+			if(!$cookie_secret) {
+				throw new BakedCarrotException('Cannot set cookie without "secret_key" parameter');
+			}
+
+			if(extension_loaded('mcrypt')) {
+				$cookie_val = base64_decode($cookie_val);
+		
+				$iv_size = mcrypt_get_iv_size(self::$mcrypt_cipher, self::$mcrypt_mode);
+				$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+				$cookie_val = mcrypt_decrypt(self::$mcrypt_cipher, Config::getVar('secret_key'), $cookie_val, self::$mcrypt_mode, $iv);
+				$cookie_val = rtrim($cookie_val, "\x0");
+			}
+
+			$hash_to_test = App::hash($key . $cookie_val . $cookie_secret); 
+			
+			if($hash_to_test != $cookie_hash) {
+				self::deleteCookie($key);
+				$cookie_val = false;
+			}
+		}
+	
+		return $cookie_val;
+	}
+	
+
+	/**
+	 * Remove cookie
+	 *
+	 * @param string $key name of the cookie
+     * @param string $path cookie path
+     * @param string $domain cookie domain
+     * @param bool $secure sends the cookie only for SSL connection
+     * @param bool $httponly cookie only accessible throught plain HTTP connection
+	 * @static
+	 */
+	public static function deleteCookie($key, $path = '/', $domain = '', $secure = false, $httponly = false)
+	{
+		setcookie($key, null, time() - 3600, $path, $domain, $secure, $httponly);
+	}
+	
+	
+	/**
+	 * Calculating hash of the string
+	 *
+	 * @param string $string input string
+	 * @return string hash value
+	 * @static
+	 */
+	public static function hash($string)
+	{
+		if(extension_loaded('hash')) {
+			if(!($key = Config::getVar('secret_key'))) {
+				throw new BakedCarrotException('"secret_key" parameter is not defined');
+			}
+
+			return hash_hmac('sha256', $string, $key);
+		}
+		else {
+			return sha1($key);
+		}
+	}
 }
 
