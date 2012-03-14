@@ -26,8 +26,10 @@ class Orm
 	 */
     public static function &collection($name)
 	{
+		$name = ucfirst($name);
+	
 		if(!isset(self::$collections[$name])) {
-			$class = self::COLLECTION_CLASS_PREFIX . ucfirst($name);
+			$class = self::COLLECTION_CLASS_PREFIX . $name;
 			
 			if(!class_exists($class) && is_file(COLLPATH . $name . EXT)) {
 				require COLLPATH . $name . EXT;

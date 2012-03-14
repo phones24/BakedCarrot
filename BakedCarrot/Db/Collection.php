@@ -11,44 +11,18 @@
  
 class Collection extends Query
 {
-	//private $_table = null;
-	//private $_primary_key = 'id';
 	private $model_info = null;
-	//private static $empty_models = null;
 	
 	
 	public function __construct($model)
 	{
-		$this->model = $model;
+		$this->model = ucfirst($model);
 		$this->model_info = Orm::modelInfo($model);
-		
-		//$object = $this->createObject();
-
-		//$this->_table = $object->getTable();
-		//$this->_primary_key = $object->getPrimaryKey();
 		
 		// default query
 		$this->select('*')->from($this->model_info['table']);
 	}
 	
-/*	
-	public function getModelName()
-	{
-		return $this->model;
-	}
-
-	
-	public function getTable()
-	{
-		return $this->_table;
-	}
-	
-	
-	public function getPrimaryKey()
-	{
-		return $this->_primary_key;
-	}
-*/
 	
 	public function load($id = null)
 	{	
@@ -88,14 +62,8 @@ class Collection extends Query
 		$class = ucfirst($clsss);
 		
 		if(!class_exists($class)) {
-			$files_to_try[] = $class . EXT;
-			$files_to_try[] = strtolower($class) . EXT;
-			
-			foreach($files_to_try as $file) {
-				if(is_file(MODELPATH . $file)) {
-					require MODELPATH . $file;
-					break;
-				}
+			if(is_file(MODELPATH . $class . EXT)) {
+				require MODELPATH . $class . EXT;
 			}
 		}
 		
@@ -106,21 +74,7 @@ class Collection extends Query
 	final public function createObject($data = null)
 	{
 		$class = self::loadModel($this->model);
-	
-		//ucfirst($this->model);
-/*		
-		if(!class_exists($class)) {
-			$files_to_try[] = $class . EXT;
-			$files_to_try[] = strtolower($class) . EXT;
-			
-			foreach($files_to_try as $file) {
-				if(is_file(MODELPATH . $file)) {
-					require MODELPATH . $file;
-					break;
-				}
-			}
-		}
-*/	
+
 		if(class_exists($class)) {
 			$object = new $class($this->model);
 			

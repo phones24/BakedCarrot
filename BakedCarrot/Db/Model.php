@@ -41,7 +41,7 @@ class Model implements ArrayAccess
 	 */
 	public function __construct($model_name)
 	{
-		$this->model_name = $model_name;
+		$this->model_name = ucfirst($model_name);
 		
 		if(!$this->_table) {
 			$this->_table = self::createTableFromModelName($model_name);
@@ -634,6 +634,7 @@ class Model implements ArrayAccess
 			return $result->findOne();
 		}
 		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model'])) {
+			
 			if(isset($this->belongsTo[$key]['cached']) && $this->belongsTo[$key]['cached'] && isset($this->ft_cache[$key])) {
 				return $this->ft_cache[$key];
 			}
@@ -663,17 +664,23 @@ class Model implements ArrayAccess
 	{
 		$this->modified = true;
 		
-		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model']) && 
-				is_object($val) && get_class($val) == $this->_has_one[$key]['model']) {
-			
+		$model_name = null;
+		$model_info = null;
+		
+		if(is_object($val) && is_a($val, Orm::MODEL_BASE_CLASS)) {
 			$model_info = $val->info();
+			$model_name = $model_info['model'];
+		}
+		
+		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model']) && 
+				is_object($val) && $model_name == $this->_has_one[$key]['model']) {
+			
 			$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $model_info['table'] . '_id';
 			$this->storage[$field] = $val->getId();
 		}
 		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model']) && 
-				is_object($val) && get_class($val) == $this->_belongs_to[$key]['model']) {
+				is_object($val) && $model_name == $this->_belongs_to[$key]['model']) {
 			
-			$model_info = $val->info();
 			$field = isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : $model_info['table'] . '_id';
 			$this->storage[$field] = $val->getId();
 		}
@@ -688,7 +695,12 @@ class Model implements ArrayAccess
 						$object = Orm::collection($this->_has_many_through[$key]['model'])->createObject(array($model_info['primary_key'] => $object));
 					}
 					
-					if(is_object($object) && get_class($object) == $this->_has_many_through[$key]['model']) {
+					if(!$model_name) {
+						$model_info = $object->info();
+						$model_name = $model_info['model'];
+					}
+					
+					if(is_object($object) && $model_name == $this->_has_many_through[$key]['model']) {
 						$this->attachThrough(
 								$object, 
 								isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
