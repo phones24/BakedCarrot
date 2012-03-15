@@ -4,7 +4,7 @@
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- * @version 0.3.1
+ * @version 0.3.2
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
@@ -24,7 +24,7 @@ if(!defined('APPPATH')) {
 
  
 // version of library
-define('BAKEDCARROT_VERSION', '0.3.1');
+define('BAKEDCARROT_VERSION', '0.3.2');
 
 // full path to external libraries
 define('VENDPATH', SYSPATH . 'Vendors' . DIRECTORY_SEPARATOR);
@@ -141,6 +141,8 @@ class App
 	 */
 	public static function create(array $params = null)
 	{
+		self::$app_mode = self::MODE_DEVELOPMENT;
+			
 		if(is_null(self::$instance)) {
 			self::$instance = new self;
 		}
@@ -149,22 +151,18 @@ class App
 		spl_autoload_register(array('App', 'autoload'));
 		
 		try {
-			self::$app_mode = self::MODE_DEVELOPMENT;
-			
-			// application mode
-			if(isset($params['mode'])) {
-				self::setMode($params['mode']);
-			}
+			// setup config
+			Config::create(isset($params['config']) ? $params['config'] : null);
+			Config::setVar($params);
 
+			// application mode
+			self::setMode(Config::getVar('mode', self::MODE_DEVELOPMENT));
+			
 			// our error handler
 			if(!self::isDevMode()) {
 				set_error_handler(array('App', 'handleErrors'));
 			}
 			
-			// setup config
-			Config::create(isset($params['config']) ? $params['config'] : null);
-			Config::setVar($params);
-
 			// language specific params
 			if(function_exists('mb_internal_encoding')) {
 				mb_internal_encoding(Config::getVar('app_encoding', 'UTF-8'));

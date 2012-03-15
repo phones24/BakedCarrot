@@ -1,7 +1,6 @@
 <?php
 /**
  * Loader 
- *
  * Takes care of controllers loading
  *
  * @package BakedCarrot

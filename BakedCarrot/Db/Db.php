@@ -4,7 +4,6 @@
  *
  * @package BakedCarrot
  * @subpackage Db
- * 
  */
  
 class Db

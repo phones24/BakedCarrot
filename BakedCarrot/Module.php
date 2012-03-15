@@ -1,13 +1,9 @@
 <?php
 /**
  * Abstract module class
- *
  * Provides method for loading configuration parameters for modules
  *
  * @package BakedCarrot
- * @author Yury Vasiliev
- * @license MIT License (http://www.opensource.org/licenses/mit-license.php) 
- * 
  */
 abstract class Module
 {

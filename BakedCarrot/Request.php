@@ -1,7 +1,6 @@
 <?php
 /**
  * Request
- *
  * Request handling class
  *
  * @package BakedCarrot

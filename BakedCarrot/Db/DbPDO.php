@@ -4,10 +4,6 @@
  *
  * @package BakedCarrot
  * @subpackage Db
- * @author Yury Vasiliev
- *
- *
- * 
  */
  
 class DbPDO extends PDO 

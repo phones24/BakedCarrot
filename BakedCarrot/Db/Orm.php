@@ -4,8 +4,6 @@
  * 
  * @package BakedCarrot
  * @subpackage Db
- *
- * 
  */
 class Orm
 {

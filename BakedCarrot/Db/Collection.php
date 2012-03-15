@@ -4,9 +4,6 @@
  *
  * @package BakedCarrot
  * @subpackage Db
- *
- *
- * 
  */
  
 class Collection extends Query

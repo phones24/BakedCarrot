@@ -1,7 +1,6 @@
 <?php
 /**
  * Route
- *
  * Represents route object
  *
  * @package BakedCarrot
