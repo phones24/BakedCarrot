@@ -4,16 +4,13 @@
  *
  * @package BakedCarrot
  * @subpackage Filelib
- * @author Yury Vasiliev
  * @todo add more callbacks
- *
- * 
  */
 
 require 'FilelibException.php';
 
 
-class Filelib extends Module
+class Filelib extends ParamLoader
 {
 	private $current_dir = '';
 	private $selected_file = '';
@@ -31,6 +28,8 @@ class Filelib extends Module
 	
 	public function __construct(array $params = null)
 	{	
+		$this->setLoaderPrefix('filelib');
+		
 		if(!($this->root_dir = $this->loadParam('root_dir', $params)) || !is_dir($this->root_dir)) {
 			throw new FilelibException('Invalid root directory: ' . $this->root_dir);
 		}

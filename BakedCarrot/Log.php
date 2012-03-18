@@ -82,7 +82,7 @@ class Log
 			$message .= is_array($val) ? print_r($val, true) : $val;
 			$message .= "\n";
 			
-			error_log($message, 3, self::$file);
+			@error_log($message, 3, self::$file);
 		}
 	}
 	

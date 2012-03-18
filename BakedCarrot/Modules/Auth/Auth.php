@@ -11,7 +11,7 @@ require 'AuthException.php';
 require 'AuthDriver.php';
 
 
-class Auth extends Module
+class Auth extends ParamLoader
 {
 	protected $user = null;
 	protected $driver = null;
@@ -24,6 +24,8 @@ class Auth extends Module
 
 	public function __construct(array $params = null)
 	{
+		$this->setLoaderPrefix('auth');
+		
 		if(!($driver_class = $this->loadParam('driver', $params))) {
 			throw new AuthException('"driver" is not defined');
 		}
@@ -146,16 +148,4 @@ class Auth extends Module
 		
 		return $this->driver->userHasRole($this->getUser(), $route->acl);
 	}
-	
-/*
-	public function hash($string)
-	{
-		if(!($auth_hash_key = $this->loadParam('hash_key'))) {
-			throw new AuthException('Hash key is not defined');
-		}
-
-		return hash_hmac('sha256', $string, $auth_hash_key);
-	}
-*/	
-	
 }

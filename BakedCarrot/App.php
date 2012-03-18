@@ -4,7 +4,7 @@
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- * @version 0.3.2
+ * @version 0.3.3
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
@@ -103,7 +103,7 @@ class App
 	 * @var array
 	 * @static
 	 */
-	private static $autoload_dirs = array('Db', 'View', 'Exceptions');
+	private static $autoload_sys_dirs = array('Db', 'View', 'Exceptions');
 
 	
 	/**
@@ -476,7 +476,8 @@ class App
 			return;
 		}
 		
-		foreach(self::$autoload_dirs as $dir) {
+		// then sysdirs
+		foreach(self::$autoload_sys_dirs as $dir) {
 			$file_to_try = SYSPATH . $dir . DIRECTORY_SEPARATOR . $class . EXT;
 			
 			if(is_file($file_to_try)) {
@@ -484,6 +485,13 @@ class App
 				return;
 			}
 		}
+		
+		// then MODELPATH
+		if(is_file(MODELPATH . $class . EXT)) {
+			require(MODELPATH . $class . EXT);
+			return;
+		}
+		
 	}
 	
 	

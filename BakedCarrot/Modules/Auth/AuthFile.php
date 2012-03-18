@@ -4,15 +4,8 @@
  *
  * @package BakedCarrot
  * @subpackage Auth
- * @author Yury Vasiliev
- * 
- *
- *
  * 
  */
-
-
-
 class AuthFile extends AuthDriver
 {
 	protected $delim = ':';
@@ -21,10 +14,12 @@ class AuthFile extends AuthDriver
 	protected $users = null;
 
 	
-	public function __construct()
+	public function __construct(array $params = null)
 	{
-		$this->anon_name = Config::getVar('auth_anon_name', 'anon');
-		$this->file = Config::getVar('auth_file');
+		$this->setLoaderPrefix('auth');
+	
+		$this->anon_name = $this->loadParam('anon_name', $params, 'anon');
+		$this->file = $this->loadParam('file', $params);
 		
 		if(!$this->file) {
 			throw new AuthException('"auth_file" is not defined');

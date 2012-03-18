@@ -5,7 +5,7 @@
  * @package BakedCarrot
  * @subpackage Pagination
  */
-class Pagination extends Module
+class Pagination extends ParamLoader
 {
 	protected $page = null;
 	protected $rows_count = null;
@@ -19,6 +19,8 @@ class Pagination extends Module
 
 	public function __construct(array $params = null)
 	{
+		$this->setLoaderPrefix('pagination');
+	
 		if(($this->rows_count = $this->loadParam('rows_count', $params)) === null) {
 			throw new BakedCarrotException('"rows_count" is not defined');
 		}

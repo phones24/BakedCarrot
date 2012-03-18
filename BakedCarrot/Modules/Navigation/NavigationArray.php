@@ -1,20 +1,19 @@
 <?php
 class NavigationArray extends NavigationDriver
 {
-	protected $params = null;
 	protected $items = null;
 	protected $source = null;
 	
 	
 	public function __construct($params = null)
 	{
-		$this->params = $params;
+		$this->setLoaderPrefix('navigation');
+
+		$this->source = $this->loadParam('source', $params);
 		
-		if(!is_array($params['source'])) {
-			throw new BakedCarrotException('"source" must be an array');
+		if(!$this->source) {
+			throw new BakedCarrotException('"navigation_source" is not defined');
 		}
-		
-		$this->source = $params['source'];
 	}
 	
 	

@@ -23,7 +23,6 @@ class Model implements ArrayAccess
 	private $collection = null;
 	private $columns_meta = null;
 	private $model_name = null;
-	private $ft_cache = null;
 	protected $_table = null;
 	protected $_primary_key = 'id';
 	protected $_has_one = null;
@@ -295,10 +294,11 @@ class Model implements ArrayAccess
 	 * @param string $join_table name of the relationship table
 	 * @param string $base_table_key name of the foreign key of base table
 	 * @param string $associated_table_key name of the foreign key of associated table
+	 * @param string $join_table_fields list of fields, that will be selected from the join table
 	 *
 	 * @return array 
 	 */
-	public function hasManyThrough($associated_class_name, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	public function hasManyThrough($associated_class_name, $join_table = null, $base_table_key = null, $associated_table_key = null, $join_table_fields = null)
 	{
 		$associated_model_info = Orm::modelInfo($associated_class_name);
 		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
@@ -307,8 +307,18 @@ class Model implements ArrayAccess
 		
 		$query = new Query($associated_class_name);
 	
+		if(is_array($join_table_fields)) {
+			foreach($join_table_fields as &$field) {
+				$field = $join_table . '.' . $field . ' as ' . Orm::JOIN_TABLE_FIELD_PREFIX . $field;
+			}
+			
+			$query->select($associated_model_info['table'] . '.*, ' . implode(', ', $join_table_fields));
+		}
+		else {
+			$query->select($associated_model_info['table'] . '.*');
+		}
+			
 		$query->
-			select($associated_model_info['table'] . '.*')->
 			from($join_table . ', ' . $associated_model_info['table'])->
 			where($associated_model_info['table'] . '.' . $associated_model_info['primary_key'] . ' = ' . $join_table . '.' . $associated_table_key . ' and ' . 
 				$join_table . '.' . $base_table_key . ' = ?', array($this->getId()));
@@ -459,7 +469,7 @@ class Model implements ArrayAccess
 	}
 
 	
-	public function attachThrough($object, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	public function attachThrough($object, $join_table = null, $base_table_key = null, $associated_table_key = null, $join_table_fields = null)
 	{
 		if(!$this->loaded()) {
 			return false;
@@ -474,7 +484,17 @@ class Model implements ArrayAccess
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
 		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
 
-		Db::insert($join_table, array($base_table_key => $this->getId(), $associated_table_key => $object->getId()));
+		$data = array($base_table_key => $this->getId(), $associated_table_key => $object->getId());
+		
+		if(is_array($join_table_fields)) {
+			foreach($join_table_fields as $field) {
+				if(isset($object[Orm::JOIN_TABLE_FIELD_PREFIX . $field])) {
+					$data = array_merge($data, array($field => $object[Orm::JOIN_TABLE_FIELD_PREFIX . $field]));
+				}
+			}
+		}
+		
+		Db::insert($join_table, $data);
 		
 		return true;
 	}
@@ -570,86 +590,50 @@ class Model implements ArrayAccess
 	public function __get($key)
 	{
 		if(isset($this->_has_many[$key]) && isset($this->_has_many[$key]['model'])) {
-			if(isset($this->_has_many[$key]['cached']) && $this->_has_many[$key]['cached'] && isset($this->ft_cache[$key])) {
-				return $this->ft_cache[$key];
-			}
-				
 			$result = $this->hasMany($this->_has_many[$key]['model'], isset($this->_has_many[$key]['foreign_key']) ? $this->_has_many[$key]['foreign_key'] : null);
 			
-			foreach(array('where', 'order', 'limit', 'offset') as $avail_params) {
+			foreach(array('order', 'limit', 'offset') as $avail_params) {
 				if(isset($this->_has_many[$key][$avail_params])) {
 					call_user_func(array($result, $avail_params), $this->_has_many[$key][$avail_params]);
 				}
-			}
-
-			if(isset($this->_has_many[$key]['cached']) && $this->_has_many[$key]['cached']) {
-				$this->ft_cache[$key] = $result->findAll();
-				return $this->ft_cache[$key];
 			}
 			
 			return $result->findAll();
 		}
 		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['model'])) {
-			if(isset($this->_has_many_through[$key]['cached']) && $this->_has_many_through[$key]['cached'] && isset($this->ft_cache[$key])) {
-				return $this->ft_cache[$key];
-			}
-			
 			$result = $this->hasManyThrough($this->_has_many_through[$key]['model'], 
 					isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
 					isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null,
-					isset($this->_has_many_through[$key]['associated_table_key']) ? $this->_has_many_through[$key]['associated_table_key'] : null
+					isset($this->_has_many_through[$key]['associated_table_key']) ? $this->_has_many_through[$key]['associated_table_key'] : null,
+					isset($this->_has_many_through[$key]['join_table_fields']) ? $this->_has_many_through[$key]['join_table_fields'] : null
 				);
 			
-			foreach(array('where', 'order', 'limit', 'offset') as $avail_params) {
+			foreach(array('order', 'limit', 'offset') as $avail_params) {
 				if(isset($this->_has_many_through[$key][$avail_params])) {
 					call_user_func(array($result, $avail_params), $this->_has_many_through[$key][$avail_params]);
 				}
-			}
-
-			if(isset($this->_has_many_through[$key]['cached']) && $this->_has_many_through[$key]['cached']) {
-				$this->ft_cache[$key] = $result->findAll();
-				return $this->ft_cache[$key];
 			}
 			
 			return $result->findAll();
 		}
 		elseif(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model'])) {
-			if(isset($this->_has_one[$key]['cached']) && $this->_has_one[$key]['cached'] && isset($this->ft_cache[$key])) {
-				return $this->ft_cache[$key];
-			}
-			
 			$result = $this->hasOne($this->_has_one[$key]['model'], isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : null);
 			
-			foreach(array('where', 'order', 'offset') as $avail_params) {
+			foreach(array('order', 'offset') as $avail_params) {
 				if(isset($this->_has_one[$key][$avail_params])) {
 					call_user_func(array($result, $avail_params), $this->_has_one[$key][$avail_params]);
 				}
-			}
-
-			if(isset($this->_has_one[$key]['cached']) && $this->_has_one[$key]['cached']) {
-				$this->ft_cache[$key] = $result->findOne();
-				return $this->ft_cache[$key];
 			}
 			
 			return $result->findOne();
 		}
 		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model'])) {
-			
-			if(isset($this->belongsTo[$key]['cached']) && $this->belongsTo[$key]['cached'] && isset($this->ft_cache[$key])) {
-				return $this->ft_cache[$key];
-			}
-			
 			$result = $this->belongsTo($this->_belongs_to[$key]['model'], isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : null);
 			
-			foreach(array('where', 'order', 'offset') as $avail_params) {
+			foreach(array('order', 'offset') as $avail_params) {
 				if(isset($this->_belongs_to[$key][$avail_params])) {
 					call_user_func(array($result, $avail_params), $this->_belongs_to[$key][$avail_params]);
 				}
-			}
-
-			if(isset($this->_belongs_to[$key]['cached']) && $this->_belongs_to[$key]['cached']) {
-				$this->ft_cache[$key] = $result->findOne();
-				return $this->ft_cache[$key];
 			}
 			
 			return $result->findOne();
@@ -685,8 +669,11 @@ class Model implements ArrayAccess
 			$this->storage[$field] = $val->getId();
 		}
 		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['model'])) {
-			
-			$this->clearRelations($this->_has_many_through[$key]['model']);
+			$this->clearRelations(
+					$this->_has_many_through[$key]['model'],
+					isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
+					isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null
+				);
 			
 			if(is_array($val)) {
 				foreach($val as $num => $object) {
@@ -695,17 +682,22 @@ class Model implements ArrayAccess
 						$object = Orm::collection($this->_has_many_through[$key]['model'])->createObject(array($model_info['primary_key'] => $object));
 					}
 					
+					if(!is_a($object, Orm::MODEL_BASE_CLASS)) {
+						continue;
+					}
+					
 					if(!$model_name) {
 						$model_info = $object->info();
 						$model_name = $model_info['model'];
 					}
 					
-					if(is_object($object) && $model_name == $this->_has_many_through[$key]['model']) {
+					if($model_name == $this->_has_many_through[$key]['model']) {
 						$this->attachThrough(
 								$object, 
 								isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
 								isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null,
-								isset($this->_has_many_through[$key]['associated_table_key']) ? $this->_has_many_through[$key]['associated_table_key'] : null
+								isset($this->_has_many_through[$key]['associated_table_key']) ? $this->_has_many_through[$key]['associated_table_key'] : null,
+								isset($this->_has_many_through[$key]['join_table_fields']) ? $this->_has_many_through[$key]['join_table_fields'] : null
 							);
 					}
 				}
@@ -713,11 +705,6 @@ class Model implements ArrayAccess
 		}
 		else {
 			$this->storage[$key] = $val;
-		}
-		
-		// reset the cache
-		if(isset($this->ft_cache[$key])) {
-			unset($this->ft_cache[$key]);
 		}
 	}
 	

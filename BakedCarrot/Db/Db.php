@@ -10,6 +10,7 @@ class Db
 {
 	private static $pdo = null;
 	private static $columns_meta = null;
+	private static $query_cache = null;
 
 
 	public static function connect($dsn = null, $username = null, $password = null, $charset = 'utf8')

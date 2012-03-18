@@ -4,17 +4,12 @@
  *
  * @package BakedCarrot
  * @subpackage Navigation
- * @author Yury Vasiliev
- * 
- * 
- *
- * 
  */
 require 'MenuItem.php';
 require 'NavigationDriver.php';
 
 
-class Navigation extends Module
+class Navigation extends ParamLoader
 {
 	protected $storage_array = null;
 	protected $root_item = null;
@@ -27,12 +22,14 @@ class Navigation extends Module
 	
 	public function __construct($params = null)
 	{
+		$this->setLoaderPrefix('navigation');
+		
 		if(!($driver_class = $this->loadParam('driver', $params))) {
-			throw new BakedCarrotException('"driver" is not defined');
+			throw new BakedCarrotException('"navigation_driver" is not defined');
 		}
 		
 		if(!($source = $this->loadParam('source', $params))) {
-			throw new BakedCarrotException('"source" is not defined');
+			throw new BakedCarrotException('"navigation_source" is not defined');
 		}
 		
 		$this->ignore_prefix = $this->loadParam('ignore_prefix', $params);

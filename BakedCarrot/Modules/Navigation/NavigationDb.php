@@ -1,17 +1,20 @@
 <?php
 
-
 class NavigationDb extends NavigationDriver
 {
-	protected $params = null;
 	protected $items = null;
 	protected $source = null;
 	
 	
-	public function __construct($params = null)
+	public function __construct(array $params = null)
 	{
-		$this->params = $params;
-		$this->source = $params['source'];
+		$this->setLoaderPrefix('navigation');
+
+		$this->source = $this->loadParam('source', $params);
+		
+		if(!$this->source) {
+			throw new BakedCarrotException('"navigation_source" is not defined');
+		}
 	}
 	
 	

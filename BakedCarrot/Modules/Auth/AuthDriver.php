@@ -4,16 +4,8 @@
  *
  * @package BakedCarrot
  * @subpackage Auth
- * @author Yury Vasiliev
- * 
- *
- *
- * 
- */
-
-
-
-abstract class AuthDriver
+  */
+abstract class AuthDriver extends ParamLoader
 {
 	abstract public function getUserByCredentials($login, $password);
 	

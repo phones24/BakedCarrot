@@ -11,6 +11,7 @@ class Orm
 	const MODEL_BASE_CLASS = 'Model';
 	const COLLECTION_CLASS_PREFIX = 'Collection';
 	const COLLECTION_BASE_CLASS = 'Collection';
+	const JOIN_TABLE_FIELD_PREFIX = '__';
 	
 	private static $collections = array();
 	private static $model_info = array();

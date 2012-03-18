@@ -12,9 +12,11 @@ class AuthDB extends AuthDriver
 	protected $anon_name = null;
 
 	
-	public function __construct()
+	public function __construct(array $params = null)
 	{
-		$this->anon_name = Config::getVar('auth_anon_name', 'anon');
+		$this->setLoaderPrefix('auth');
+		
+		$this->anon_name = $this->loadParam('anon_name', $params, 'anon');
 	}
 	
 	
@@ -40,7 +42,7 @@ class AuthDB extends AuthDriver
 			
 			$session = Orm::collection('Session')->load();
 			$session->user = $user;
-			$session->token = sha1(uniqid(rand(), true));
+			$session->token = App::hash(uniqid(rand(), true));
 			$session->store();
 			
 			Db::commit();

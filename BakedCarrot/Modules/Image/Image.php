@@ -4,16 +4,12 @@
  *
  * @package BakedCarrot
  * @subpackage Image
- * @author Yury Vasiliev
- *
- *
- * 
  */
 
 require 'ImageException.php';
 	
 	
-class Image extends Module
+class Image extends ParamLoader
 {
 	const RESIZE_BASE_MAX = 100;
 	const RESIZE_BASE_MIN = 200;
@@ -51,6 +47,8 @@ class Image extends Module
 		if(imagetypes() & IMG_GIF) {
 			$this->format_supported[] = IMAGETYPE_GIF;
 		}
+		
+		$this->setLoaderPrefix('image');
 		
 		$this->dir_mask = $this->loadParam('dir_mask', $params, $this->dir_mask);
 		$this->file_mask = $this->loadParam('file_mask', $params, $this->file_mask);

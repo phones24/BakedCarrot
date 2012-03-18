@@ -1,5 +1,5 @@
 <?php
-abstract class NavigationDriver
+abstract class NavigationDriver extends ParamLoader
 {
 	abstract public function getData();
 }
