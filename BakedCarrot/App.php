@@ -24,7 +24,7 @@ if(!defined('APPPATH')) {
 
  
 // version of library
-define('BAKEDCARROT_VERSION', '0.3.2');
+define('BAKEDCARROT_VERSION', '0.3.3');
 
 // full path to external libraries
 define('VENDPATH', SYSPATH . 'Vendors' . DIRECTORY_SEPARATOR);
