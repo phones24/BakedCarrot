@@ -78,7 +78,7 @@ class AuthDB extends AuthDriver
 	{
 		$session = Orm::collection('Session')->where('token = ?', array($token))->findOne();
 		
-		return $session ? $session->user : null;
+		return $session ? $session->user->findOne() : null;
 	}
 	
 	

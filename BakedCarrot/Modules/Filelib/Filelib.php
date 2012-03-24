@@ -5,7 +5,9 @@
  * @package BakedCarrot
  * @subpackage Filelib
  * @todo add more callbacks
- */
+ * @todo change setSelectedFile to accept arrays of selected files
+ * @todo remove thumbnail creation from the module
+*/
 
 require 'FilelibException.php';
 
@@ -24,6 +26,7 @@ class Filelib extends ParamLoader
 	private $thumbnails_color = array(100, 100, 100);
 	private $thumbnails_bgr = array(200, 200, 200);
 	private $callbacks = array();
+	private $sort_func = '';
 	
 	
 	public function __construct(array $params = null)
@@ -45,6 +48,7 @@ class Filelib extends ParamLoader
 		$this->root_dir = rtrim(realpath($this->root_dir), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 		$this->filelib_uri = $this->getUriByPath($this->root_dir);
 		$this->current_dir = $this->root_dir;
+		$this->sort_func = array($this, 'sortByNameAsc');
 	}
 
 	
@@ -114,6 +118,17 @@ class Filelib extends ParamLoader
 	}
 	
 	
+	public function setSortFunction($func)
+	{
+		if(is_string($func)) {
+			$this->sort_func = array($this, $func);
+		}
+		else {
+			$this->sort_func = $func;
+		}
+	}
+	
+	
 	public function isValidDir($dir)
 	{
 		$dir = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
@@ -149,6 +164,8 @@ class Filelib extends ParamLoader
 		}
 		
 		$this->runCallback('after_upload', array($dst_file_path));
+		
+		return $dst_file_path;
 	}
 
 	
@@ -280,8 +297,8 @@ class Filelib extends ParamLoader
 		
 		closedir($handle); 
 		
-		uasort($files, array($this, 'sortByNameInc'));
-		uasort($dirs, array($this, 'sortByNameInc'));
+		uasort($files, $this->sort_func);
+		uasort($dirs, $this->sort_func);
 		
 		return array_merge($dirs, $files);
 	}
@@ -363,6 +380,7 @@ class Filelib extends ParamLoader
 				'is_image'			=> $image_info ? true : false,
 				'size'				=> sprintf($this->size_format,  $file_info[7] / 1024),
 				'date'				=> strftime($this->date_format, $file_info['mtime']),
+				'mtime'				=> $file_info['mtime']
 			);
 	}
 	
@@ -389,6 +407,7 @@ class Filelib extends ParamLoader
 
 		if(!is_file($cache_file)) {
 			$ipr = App::module('Image');
+			
 			$ipr->loadFromFile($file)
 				->saveAsThumbnail($cache_file, $this->thumbnails_width, $this->thumbnails_height);
 			unset($ipr);
@@ -406,27 +425,28 @@ class Filelib extends ParamLoader
 	}
 	
 	
+	// TODO: add more sort functions
 	private function sortByDateDesc($a, $b) 
 	{                    
-		if ($a['filedate'] == $b['filedate']) {
+		if ($a['info']['mtime'] == $b['info']['mtime']) {
 			return 0;
 		}
 		
-		return ($a['filedate'] > $b['filedate']) ? -1 : 1;
+		return ($a['info']['mtime'] > $b['info']['mtime']) ? -1 : 1;
 	}
 
 	
-	private function sortByDateInc($a, $b) 
+	private function sortByDateAsc($a, $b) 
 	{
-		if ($a['filedate'] == $b['filedate']) {
+		if ($a['info']['mtime'] == $b['info']['mtime']) {
 			return 0;
 		}
 		
-		return ($a['filedate'] < $b['filedate']) ? -1 : 1;
+		return ($a['info']['mtime'] < $b['info']['mtime']) ? -1 : 1;
 	}
 	
 	
-	private function sortByNameInc($a, $b) 
+	private function sortByNameAsc($a, $b) 
 	{ 
 		return strcmp($a['name'], $b['name']); 
 	} 

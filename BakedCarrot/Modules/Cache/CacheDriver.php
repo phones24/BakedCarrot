@@ -16,6 +16,8 @@ abstract class CacheDriver extends ParamLoader
 
 	abstract public function delete($key);
 	
+	abstract public function exists($key);
+
 	abstract public function clear();
 	
 	abstract public function increment($key, $step);

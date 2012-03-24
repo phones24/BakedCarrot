@@ -26,7 +26,8 @@ class Orm
     public static function &collection($name)
 	{
 		$name = ucfirst($name);
-	
+		$collection = null;
+		
 		if(!isset(self::$collections[$name])) {
 			$class = self::COLLECTION_CLASS_PREFIX . $name;
 			
@@ -45,13 +46,13 @@ class Orm
 				$class_name = self::COLLECTION_BASE_CLASS;
 				$collection = new $class_name($name);
 			}
-			
-			return $collection;
+		}
+		else {
+			$collection = &self::$collections[$name];
+			$collection->reset();
 		}
 		
-		self::$collections[$name]->reset();
-		
-		return self::$collections[$name];
+		return $collection;
 	}
 	
 

@@ -79,6 +79,14 @@ class CacheMemcache extends CacheDriver
 	}
 
 	
+	public function exists($key)
+	{
+		$result = $this->mc->get($key);
+		
+		return $result !== false;
+	}
+
+	
 	public function delete($key)
 	{
 		return $this->mc->delete($key, 0);
@@ -107,7 +115,14 @@ class CacheMemcache extends CacheDriver
 	{
 		foreach($this->servers as $server) {
 			if($server['host'] == $host && $server['port'] == $port) { // put server offline
-				return $this->mc->setServerParams($server['host'], $server['port'], $server['persistent'], $server['weight'], $server['timeout'], $server['retry_interval'], false, array($this, 'failureСallback'));
+				return $this->mc->setServerParams(
+						$server['host'], 
+						$server['port'], 
+						$server['timeout'], 
+						$server['retry_interval'], 
+						false, 
+						array($this, 'failureСallback')
+					);
 			}
 		}
 		

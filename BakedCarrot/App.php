@@ -4,7 +4,7 @@
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- * @version 0.3.3
+ * @version 0.3.4
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
@@ -24,7 +24,7 @@ if(!defined('APPPATH')) {
 
  
 // version of library
-define('BAKEDCARROT_VERSION', '0.3.3');
+define('BAKEDCARROT_VERSION', '0.3.4');
 
 // full path to external libraries
 define('VENDPATH', SYSPATH . 'Vendors' . DIRECTORY_SEPARATOR);
@@ -485,13 +485,6 @@ class App
 				return;
 			}
 		}
-		
-		// then MODELPATH
-		if(is_file(MODELPATH . $class . EXT)) {
-			require(MODELPATH . $class . EXT);
-			return;
-		}
-		
 	}
 	
 	

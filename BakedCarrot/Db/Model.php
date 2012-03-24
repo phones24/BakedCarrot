@@ -151,6 +151,9 @@ class Model implements ArrayAccess
 	{
 		$this->runEvent('onBeforeStore');
 		
+		// clearing the cache
+		OrmCache::clearCacheForTable($this->_table);
+		
 		if($this->getId() > 0) {
 			$this->runEvent('onBeforeUpdate');
 			
@@ -256,6 +259,9 @@ class Model implements ArrayAccess
 	{
 		$this->runEvent('onBeforeDelete');
 
+		// clearing the cache
+		OrmCache::clearCacheForTable($this->_table);
+		
 		Db::delete($this->_table, $this->_primary_key . ' = ?', array($this->getId()));
 		
 		$this->runEvent('onAfterDelete');
@@ -329,49 +335,32 @@ class Model implements ArrayAccess
 
 	public function hasMany($associated_class_name, $foreign_key = null)
 	{
-		$associated_model_info = Orm::modelInfo($associated_class_name);
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
-	
-		$query = new Query($associated_class_name);
-	
-		$query->
-			select('*')->
-			from($associated_model_info['table'])->
-			where($foreign_key . ' = ?', array($this->getId()));
+		$collection = Orm::collection($associated_class_name)->where($foreign_key . ' = ?', array($this->getId()));
 
-		return $query;
+		return $collection;
 	}
 	
 	
 	public function hasOne($associated_class_name, $foreign_key = null)
 	{
-		$associated_model_info = Orm::modelInfo($associated_class_name);
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
-		
-		$query = new Query($associated_class_name);
-	
-		$query->
-			select('*')->
-			from($associated_model_info['table'])->
-			where($foreign_key . ' = ?', array($this->getId()));
+		$collection = Orm::collection($associated_class_name)->where($foreign_key . ' = ?', array($this->getId()));
 
-		return $query;
+		return $collection;
 	}
 
 
 	public function belongsTo($associated_class_name, $foreign_key = null)
 	{
-		$associated_model_info = Orm::modelInfo($associated_class_name);
+		$collection = Orm::collection($associated_class_name);
+
+		$associated_model_info = $collection->info();
 		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
 		
-		$query = new Query($associated_class_name);
+		$collection->where($associated_model_info['primary_key'] . ' = ?', array($this[$foreign_key]));
 
-		$query->
-			select('*')->
-			from($associated_model_info['table'])->
-			where($associated_model_info['primary_key'] . ' = ?', array($this[$foreign_key]));
-		
-		return $query;
+		return $collection;
 	}
 	
 
@@ -429,6 +418,8 @@ class Model implements ArrayAccess
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
 
+		OrmCache::clearCacheForTable($this->_table);
+		
 		Db::update($this->_table, array($foreign_key => $object->getId()), 'id = ?', array($this->getId()));
 		
 		return $this->reload();
@@ -444,6 +435,8 @@ class Model implements ArrayAccess
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
 
+		OrmCache::clearCacheForTable($this->_table);
+		
 		Db::update($this->_table, array($foreign_key => null), 'id = ?', array($this->getId()));
 		
 		return $this->reload();
@@ -462,6 +455,8 @@ class Model implements ArrayAccess
 		
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
+
+		OrmCache::clearCacheForTable($associated_model_info['table']);
 
 		Db::update($associated_model_info['table'], array($foreign_key => $this->getId()), 'id = ?', array($object->getId()));
 		
@@ -494,6 +489,8 @@ class Model implements ArrayAccess
 			}
 		}
 		
+		OrmCache::clearCacheForTable($join_table);
+		
 		Db::insert($join_table, $data);
 		
 		return true;
@@ -513,9 +510,12 @@ class Model implements ArrayAccess
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
 
+		OrmCache::clearCacheForTable($associated_model_info['table']);
+		
 		Db::update($associated_model_info['table'], array($foreign_key => null), 'id = ?', array($object->getId()));
 		
 		return $this->reload();
+		
 	}
 
 	
@@ -534,6 +534,8 @@ class Model implements ArrayAccess
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
 		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
 	
+		OrmCache::clearCacheForTable($join_table);
+
 		return Db::delete($join_table, $base_table_key . ' = ? and ' . $associated_table_key . ' = ?', array($this->getId(), $object->getId()));
 	}
 	
@@ -544,6 +546,8 @@ class Model implements ArrayAccess
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
 		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_model_info['table']);
 		
+		OrmCache::clearCacheForTable($join_table);
+
 		return Db::delete($join_table, $base_table_key . ' = ?', array($this->getId()));
 	}
 	
@@ -592,13 +596,13 @@ class Model implements ArrayAccess
 		if(isset($this->_has_many[$key]) && isset($this->_has_many[$key]['model'])) {
 			$result = $this->hasMany($this->_has_many[$key]['model'], isset($this->_has_many[$key]['foreign_key']) ? $this->_has_many[$key]['foreign_key'] : null);
 			
-			foreach(array('order', 'limit', 'offset') as $avail_params) {
+			foreach(array('order', 'limit', 'offset', 'cached') as $avail_params) {
 				if(isset($this->_has_many[$key][$avail_params])) {
 					call_user_func(array($result, $avail_params), $this->_has_many[$key][$avail_params]);
 				}
 			}
 			
-			return $result->findAll();
+			return $result;
 		}
 		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['model'])) {
 			$result = $this->hasManyThrough($this->_has_many_through[$key]['model'], 
@@ -608,35 +612,35 @@ class Model implements ArrayAccess
 					isset($this->_has_many_through[$key]['join_table_fields']) ? $this->_has_many_through[$key]['join_table_fields'] : null
 				);
 			
-			foreach(array('order', 'limit', 'offset') as $avail_params) {
+			foreach(array('order', 'limit', 'offset', 'cached') as $avail_params) {
 				if(isset($this->_has_many_through[$key][$avail_params])) {
 					call_user_func(array($result, $avail_params), $this->_has_many_through[$key][$avail_params]);
 				}
 			}
 			
-			return $result->findAll();
+			return $result;
 		}
 		elseif(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model'])) {
 			$result = $this->hasOne($this->_has_one[$key]['model'], isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : null);
 			
-			foreach(array('order', 'offset') as $avail_params) {
+			foreach(array('order', 'offset', 'cached') as $avail_params) {
 				if(isset($this->_has_one[$key][$avail_params])) {
 					call_user_func(array($result, $avail_params), $this->_has_one[$key][$avail_params]);
 				}
 			}
 			
-			return $result->findOne();
+			return $result;
 		}
 		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model'])) {
 			$result = $this->belongsTo($this->_belongs_to[$key]['model'], isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : null);
 			
-			foreach(array('order', 'offset') as $avail_params) {
+			foreach(array('order', 'offset', 'cached') as $avail_params) {
 				if(isset($this->_belongs_to[$key][$avail_params])) {
 					call_user_func(array($result, $avail_params), $this->_belongs_to[$key][$avail_params]);
 				}
 			}
 			
-			return $result->findOne();
+			return $result;
 		}
 		else {
 			return isset($this->storage[$key]) ? $this->storage[$key] : null;
@@ -659,8 +663,12 @@ class Model implements ArrayAccess
 		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model']) && 
 				is_object($val) && $model_name == $this->_has_one[$key]['model']) {
 			
-			$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $model_info['table'] . '_id';
-			$this->storage[$field] = $val->getId();
+			$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $this->_table . '_id';
+			$val->storage[$field] = $this->getId();
+			$val->store();
+
+			//$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $model_info['table'] . '_id';
+			//$this->storage[$field] = $val->getId();
 		}
 		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model']) && 
 				is_object($val) && $model_name == $this->_belongs_to[$key]['model']) {

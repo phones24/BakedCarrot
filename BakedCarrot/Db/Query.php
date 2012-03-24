@@ -13,6 +13,7 @@ class Query
 	protected $model = Orm::MODEL_BASE_CLASS;
 	private $sql_accum = null;
 	private $values_accum = null;
+	private $use_cache = false;
 	
 
 	public function __construct($model = null)
@@ -26,12 +27,21 @@ class Query
 	public function findAll()
 	{
 		$result = array();
-		$rows = Db::getAll($this->compile(), $this->values_accum);
+		$sql = $this->compile();
+
+		if(($result_cached = OrmCache::getCachedQuery($sql, $this->values_accum)) !== false && $this->use_cache) {
+			return $result_cached;
+		}
 		
+		$rows = Db::getAll($this->compile(), $this->values_accum);
 		$new_collection = Orm::collection($this->model);
 		
 		foreach($rows as $row) {
 			$result[$row['id']] = $new_collection->createObject($row);
+		}
+		
+		if($this->use_cache) {
+			OrmCache::cacheQuery($sql, $this->values_accum, $this->getStatement('from'), $result);
 		}
 		
 		return $result;
@@ -42,11 +52,22 @@ class Query
 	{
 		$this->remove('limit')->limit(1);
 		
-		if($row = Db::getRow($this->compile(), $this->values_accum)) {
-			return Orm::collection($this->model)->createObject($row);
+		$result = null;
+		$sql = $this->compile();
+		
+		if(($result_cached = OrmCache::getCachedQuery($sql, $this->values_accum)) !== false && $this->use_cache) {
+			return $result_cached;
 		}
 		
-		return null;
+		if($row = Db::getRow($sql, $this->values_accum)) {
+			$result = Orm::collection($this->model)->createObject($row);
+		}
+		
+		if($this->use_cache) {
+			OrmCache::cacheQuery($sql, $this->values_accum, $this->getStatement('from'), $result);
+		}
+		
+		return $result;
 	}
 
 	
@@ -145,6 +166,14 @@ class Query
 	}
 
 	
+	public function cached()
+	{
+		$this->use_cache = true;
+		
+		return $this;
+	}
+
+	
 	public function hasStatement($stmt)
 	{
 		foreach($this->sql_accum as $num => $options) {
@@ -157,13 +186,25 @@ class Query
 	}
 
 	
+	public function getStatement($stmt)
+	{
+		foreach($this->sql_accum as $num => $options) {
+			if($options[0] == $stmt) {
+				return $options[1];
+			}
+		}
+		
+		return null;
+	}
+	
+	
 	private static function cmpFunction($a, $b)
 	{
 		if($a[2] == $b[2]) {
 			return 0;
 		}
 		
-		return ($a[2] > $b[2]) ? +1 : -1;
+		return ($a[2] > $b[2]) ? 1 : -1;
 	}
 	
 	

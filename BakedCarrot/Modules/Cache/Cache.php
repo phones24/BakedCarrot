@@ -49,6 +49,12 @@ class Cache extends ParamLoader
 	}
 	
 	
+	public function exists($key)
+	{
+		return $this->driver->exists($this->sanitize($key));
+	}
+	
+	
 	public function clear()
 	{
 		return $this->driver->clear();

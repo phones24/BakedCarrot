@@ -53,7 +53,7 @@ class Collection extends Query
 		$object2->store();
 	}
 
-	
+
 	static function loadModel($clsss)
 	{
 		$class = ucfirst($clsss);

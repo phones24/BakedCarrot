@@ -38,6 +38,12 @@ class CacheApc extends CacheDriver
 	}
 	
 	
+	public function exists($key)
+	{
+		return apc_exists($key);
+	}
+	
+	
 	public function clear()
 	{
 		return apc_clear_cache('user');
