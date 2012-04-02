@@ -8,6 +8,10 @@
  */
 class Loader
 {
+	const EXCEPTION_DEFAULT_HANDLER_NAME = 'handlerDefault';
+	const EXCEPTION_CLASS_NAME = 'ExceptionHandler';
+	
+
 	/**
 	 * Invokes controller's method of given route
 	 *
@@ -20,11 +24,11 @@ class Loader
 		$class_name = self::getClassNameByController($route->controller);
 		
 		if(!$ctrl_file) {
-			throw new NotFoundException('Could not find controller "' . $route->controller . '" for route "' . $route->name . '"');
+			App::notFound('Could not find controller "' . $route->controller . '" for route "' . $route->name . '"');
 		}
 		
 		if(!is_readable($ctrl_file)) {
-			throw new NotFoundException('Cannot load file "' . $ctrl_file . '" for route "' . $route->name . '"');
+			App::notFound('Cannot load file "' . $ctrl_file . '" for route "' . $route->name . '"');
 		}
 		
 		if(!class_exists($class_name)) {
@@ -39,7 +43,6 @@ class Loader
 		$called = false;
 		foreach($methods_to_try as $method) {
 			if(method_exists($ctrl_class, $method)) {
-				
 				call_user_func_array(array($ctrl_class, $method), array());
 				$called = true;
 				
@@ -48,7 +51,7 @@ class Loader
 		}
 		
 		if(!$called) {
-			throw new NotFoundException('Could not find valid method of class "' . $class_name . '" to execute');
+			App::notFound('Could not find valid method of class "' . $class_name . '" to execute');
 		}
 		
 		unset($ctrl_class);
@@ -65,7 +68,7 @@ class Loader
 	public static function invokeExceptionHandler($e, $handler)
 	{
 		$handler_file = realpath(CTRLPATH . $handler . EXT);
-		$class_name = 'ExceptionHandler';
+		$class_name = self::EXCEPTION_CLASS_NAME;
 		$method = 'handler' . get_class($e);
 
 		if(!$handler_file || !is_readable($handler_file)) {
@@ -82,11 +85,15 @@ class Loader
 		
 		$handler_class = new $class_name(); 
 		
-		if(!method_exists($handler_class, $method)) {
+		if(method_exists($handler_class, $method)) {
+			call_user_func_array(array($handler_class, $method), array($e));
+		}
+		elseif(method_exists($handler_class, self::EXCEPTION_DEFAULT_HANDLER_NAME)) {
+			call_user_func_array(array($handler_class, self::EXCEPTION_DEFAULT_HANDLER_NAME), array($e));
+		}
+		else {
 			throw new BakedCarrotException('Could not find method "' . $method . '" of class "' . $class_name . '"');
 		}
-		
-		call_user_func_array(array($handler_class, $method), array($e));
 	}
 	
 	

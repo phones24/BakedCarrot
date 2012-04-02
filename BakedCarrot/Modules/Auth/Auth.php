@@ -132,7 +132,9 @@ class Auth extends ParamLoader
 	
 	public function loggedIn()
 	{
-		return (bool)$this->user;
+		$anon_user = $this->getAnonUser();
+		
+		return ((bool)$this->user && $anon_user != $this->user);
 	}
 	
 	

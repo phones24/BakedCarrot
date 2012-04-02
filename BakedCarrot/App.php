@@ -4,7 +4,7 @@
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- * @version 0.3.4
+ * @version 0.3.5
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
@@ -24,7 +24,7 @@ if(!defined('APPPATH')) {
 
  
 // version of library
-define('BAKEDCARROT_VERSION', '0.3.4');
+define('BAKEDCARROT_VERSION', '0.3.5');
 
 // full path to external libraries
 define('VENDPATH', SYSPATH . 'Vendors' . DIRECTORY_SEPARATOR);
@@ -237,20 +237,39 @@ class App
 					}
 				}
 				
-				$matched_route = Router::getMatchedRoute();
-				
-				if(!$matched_route) {
-					throw new NotFoundException();
-				}
-			
-				Log::out(__METHOD__ . ' Matched route: "' . $matched_route->name . '", pattern: ' . $matched_route->raw_pattern, Log::LEVEL_DEBUG);
-				
 				// only starts output buffering in development mode
 				if(!self::isDevMode()) {
 					ob_start();
 				}
 				
-				Loader::invoke($matched_route);
+				$all_routes_processed = false;
+				$matched_route = null;
+				$offset = -1;
+				
+				// start searching for matched route
+				while(!$all_routes_processed) {
+					$matched_route = Router::getMatchedRoute(false, $offset + 1);
+					
+					if(!$matched_route) {
+						App::notFound();
+					}
+				
+					Log::out(__METHOD__ . ' Matched route: "' . $matched_route->name . '", pattern: ' . 
+							$matched_route->getPatternRegex() . ', offset: ' . 
+							$matched_route->getOffset(), Log::LEVEL_DEBUG);
+							
+					$offset = $matched_route->getOffset();
+					
+					try {
+						Loader::invoke($matched_route);
+					}
+					catch(BakedCarrotPassException $e) {
+						$all_routes_processed = false;
+						continue;
+					}
+					
+					$all_routes_processed = true;
+				}
 				
 				if(!self::isDevMode()) {
 					ob_end_flush();
@@ -261,12 +280,22 @@ class App
 					while(@ob_end_clean());
 				}
 				
-				$class = get_class($e);
+				$classes_to_test = array(get_class($e), get_parent_class($e), 'Exception');
+				$executed = false;
 				
-				if(isset(self::$exception_handlers[$class])) {
-					Loader::invokeExceptionHandler($e, self::$exception_handlers[$class]);
+				foreach($classes_to_test as $class) {
+					if(isset(self::$exception_handlers[$class])) {
+						Loader::invokeExceptionHandler($e, self::$exception_handlers[$class]);
+						
+						Log::out(__METHOD__ . ' Exception handler "' . self::$exception_handlers[$class] . '" invoked for class "' . 
+								$class . '"', Log::LEVEL_INFO);
+						
+						$executed = true;
+						break;
+					}
 				}
-				else {
+				
+				if(!$executed) {
 					throw $e;
 				}
 			}
@@ -298,22 +327,38 @@ class App
 		elseif(isset($_SERVER['HTTP_USER_AGENT']) && $_SERVER['HTTP_USER_AGENT'] == 'Shockwave Flash') {
 			print 'EXCEPTION (' . get_class($e) . '): ' . $e->getMessage();
 		}
+		elseif(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+			print 'EXCEPTION (' . get_class($e) . '): ' . $e->getMessage();
+		}
 		else {
-			if(!headers_sent()) {
-				header('HTTP/1.1 500 Internal Server Error');
+			if($e instanceOf BakedCarrotNotFoundException) {
+				if(!headers_sent()) {
+					header('HTTP/1.0 404 Not Found');
+				}
+					
+				print '<html><head></head><body style="font: 10pt arial; margin: 40px;">' .
+					'<h1 style="font-weight: normal; font-size: 30px;">404 Page Not Found</h1>' . 
+					($e->getMessage() ? '<h3 style="margin: 0; font-weight: normal;">Message: ' . $e->getMessage() . '</h3>' : '') .
+					(self::isDevMode() ? '<p>' . nl2br($e->getTraceAsString()) . '</p>' : '') .
+					'</body>';
 			}
-			
-			print '<html><head></head><body style="font: 10pt arial; margin: 30px;">' .
-				'<h1><em>' . get_class($e) . '</em> occured</h1>' . 
-				'<h3 style="margin: 0;">Message: ' . $e->getMessage() . '</h3>' .
-				'<h3 style="margin: 0;">Code: ' . $e->getCode() . '</h3>' .
-				(self::isDevMode() && get_class($e) == 'PDOException' ? '<h3 style="margin: 0;">SQL: ' . Db::lastSql() . '</h3>' : '') .
-				(self::isDevMode() ? '<p>' . nl2br($e->getTraceAsString()) . '</p>' : '') .
-				'<h4><em>Baked Carrot ver ' . BAKEDCARROT_VERSION . '</em></h4>' .
-				'</body>';
+			else {
+				if(!headers_sent()) {
+					header('HTTP/1.1 500 Internal Server Error');
+				}
+				
+				print '<html><head></head><body style="font: 10pt arial; margin: 40px;">' .
+					'<h1 style="font-weight: normal; font-size: 30px;">' . get_class($e) . ' occured</h1>' . 
+					'<h3 style="margin: 0; font-weight: normal;">Message: ' . $e->getMessage() . '</h3>' .
+					'<h3 style="margin: 0; font-weight: normal;">Code: ' . $e->getCode() . '</h3>' .
+					(self::isDevMode() && get_class($e) == 'PDOException' ? '<h3 style="margin: 0;">SQL: ' . Db::lastSql() . '</h3>' : '') .
+					(self::isDevMode() ? '<p>' . nl2br($e->getTraceAsString()) . '</p>' : '') .
+					'<h4 style="font-weight: normal;"><em>Baked Carrot ver ' . BAKEDCARROT_VERSION . '</em></h4>' .
+					'</body>';
+			}
 		}
 		
-		return;
+		exit(-1);
 	}
 
 	
@@ -433,7 +478,7 @@ class App
 	 * @return cleared data
 	 * @static
 	 */
-    private static function clearMagicQuotes($data)
+	private static function clearMagicQuotes($data)
 	{
 		if(is_array($data)) {
 			return array_map(array('self', 'clearMagicQuotes'), $data);
@@ -441,7 +486,7 @@ class App
 		else {
 			return stripslashes($data);
 		}
-    }
+	}
 	
 	
 	/**
@@ -530,10 +575,10 @@ class App
 	 * @param string $key name of the cookie
 	 * @param string $val value of the cookie
 	 * @param integer $exp expiration time
-     * @param string $path cookie path
-     * @param string $domain cookie domain
-     * @param bool $secure sends the cookie only for SSL connection
-     * @param bool $httponly cookie only accessible throught plain HTTP connection
+	 * @param string $path cookie path
+	 * @param string $domain cookie domain
+	 * @param bool $secure sends the cookie only for SSL connection
+	 * @param bool $httponly cookie only accessible throught plain HTTP connection
 	 * @return bool operation result
 	 * @static
 	 */
@@ -644,6 +689,19 @@ class App
 		else {
 			return sha1($key);
 		}
+	}
+	
+	
+	/**
+	 * Throws special exception that sends 404 error to client
+	 *
+	 * @param string $message message to client
+	 * @return void
+	 * @static
+	 */
+	public static function notFound($message = null)
+	{
+		throw new BakedCarrotNotFoundException($message);
 	}
 }
 

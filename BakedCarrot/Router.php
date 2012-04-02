@@ -9,6 +9,7 @@ class Router
 {
 	private static $routes = array();
 	private static $matched_route = null;
+	public static $routes_count = 0;
 	
 
 	public static function add($name, $path_mask, $params = array())
@@ -25,20 +26,21 @@ class Router
 	}
 	
 	
-	public static function getMatchedRoute($trailing_slash = false)
+	public static function getMatchedRoute($trailing_slash = false, $offset = 0)
 	{
-		self::$matched_route = self::getRouteByUri(Request::getUri() . ($trailing_slash ? '/' : ''));
+		self::$matched_route = self::getRouteByUri(Request::getUri() . ($trailing_slash ? '/' : ''), $offset);
 		
 		return self::$matched_route;
 	}
 	
 	
-	public static function getRouteByUri($uri)
+	public static function getRouteByUri($uri, $offset = 0)
 	{
 		$matched_route = null;
+		$i = 0;
 		
 		foreach(self::$routes as $name => $route) {
-			if($route->match($uri)) {
+			if($i++ >= $offset && $route->match($uri)) {
 				$matched_route = $route;
 				break;
 			}

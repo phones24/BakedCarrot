@@ -22,7 +22,8 @@ class Model implements ArrayAccess
 	private $modified = false;
 	private $collection = null;
 	private $columns_meta = null;
-	private $model_name = null;
+	private $is_loaded = false;
+	protected $model_name = null;
 	protected $_table = null;
 	protected $_primary_key = 'id';
 	protected $_has_one = null;
@@ -61,6 +62,7 @@ class Model implements ArrayAccess
 		$this->storage = $data;
 		
 		$this->modified = false;
+		$this->is_loaded = true; // assume the object is loaded from database
 	}
 	
 	
@@ -71,7 +73,8 @@ class Model implements ArrayAccess
 	 */
 	public function loaded()
 	{
-		return isset($this[$this->_primary_key]) && $this[$this->_primary_key] != 0;
+		return $this->is_loaded;
+		//return isset($this[$this->_primary_key]) && $this[$this->_primary_key] != 0;
 	}
 	
 	
@@ -154,7 +157,7 @@ class Model implements ArrayAccess
 		// clearing the cache
 		OrmCache::clearCacheForTable($this->_table);
 		
-		if($this->getId() > 0) {
+		if($this->loaded()) {
 			$this->runEvent('onBeforeUpdate');
 			
 			$this->storeUpdate();
@@ -172,6 +175,7 @@ class Model implements ArrayAccess
 		$this->runEvent('onAfterStore');
 
 		$this->modified = false;
+		$this->is_loaded = true;
 		
 		return $this->getId();
 	}
@@ -268,6 +272,7 @@ class Model implements ArrayAccess
 		
 		$this->storage = null;
 		$this->modified = false;
+		$this->is_loaded = false;
 	}
 
 
@@ -659,22 +664,23 @@ class Model implements ArrayAccess
 			$model_info = $val->info();
 			$model_name = $model_info['model'];
 		}
-		
-		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model']) && 
-				is_object($val) && $model_name == $this->_has_one[$key]['model']) {
+			
+		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['model'])) {
+			if(!isset($model_info)) {
+				$model_info = Orm::modelInfo($this->_has_one[$key]['model']);
+			}
 			
 			$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $this->_table . '_id';
-			$val->storage[$field] = $this->getId();
+			$val->storage[$field] = (is_object($val) && $model_info['model'] == $this->_has_one[$key]['model']) ? $this->getId() : $val;
 			$val->store();
-
-			//$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $model_info['table'] . '_id';
-			//$this->storage[$field] = $val->getId();
 		}
-		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model']) && 
-				is_object($val) && $model_name == $this->_belongs_to[$key]['model']) {
+		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['model'])) {
+			if(!isset($model_info)) {
+				$model_info = Orm::modelInfo($this->_belongs_to[$key]['model']);
+			}
 			
 			$field = isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : $model_info['table'] . '_id';
-			$this->storage[$field] = $val->getId();
+			$this->storage[$field] = (is_object($val) && $model_info['model'] == $this->_belongs_to[$key]['model']) ? $val->getId() : $val;
 		}
 		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['model'])) {
 			$this->clearRelations(

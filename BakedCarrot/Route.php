@@ -11,6 +11,7 @@ class Route
 	private $params = array();
 	private $route_params = array();
 	private $pattern_regex = null;
+	private $offset = -1;
 	
 
 	public function __construct($name, $pattern, $params = array())
@@ -20,6 +21,7 @@ class Route
 		$this->params['pattern'] = $pattern;
 		$this->params['controller'] = isset($this->params['controller']) ? $this->params['controller'] : $this->params['name'];
 		$this->params['action'] = isset($this->params['action']) ? $this->params['action'] : 'index';
+		$this->offset = ++Router::$routes_count;
 	}
 
 
@@ -51,14 +53,14 @@ class Route
 	{
 		return $this->route_params;
 	}
+
 	
-	
-	public function getAcl()
+	public function getOffset()
 	{
-		return $this->acl;
+		return $this->offset;
 	}
-	
-	
+
+
 	public function match($uri_to_match)
 	{
 		if(preg_match("/[^a-zA-Z0-9_\-\.\/\\\]/", $this->controller)) {
@@ -112,7 +114,6 @@ class Route
 		$regex = preg_replace("/\(\?P<([^>]+)>\)/", '(?P<\\1>[^/]+)', $regex);
 		
 		return '#^' . $regex . '$#';
-		
 	}
 	
 	
