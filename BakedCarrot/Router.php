@@ -22,6 +22,10 @@ class Router
 	
 	public static function getCurrentRoute()
 	{
+		if(!self::$matched_route) {
+			self::getMatchedRoute();
+		}
+
 		return self::$matched_route;
 	}
 	
@@ -36,17 +40,17 @@ class Router
 	
 	public static function getRouteByUri($uri, $offset = 0)
 	{
-		$matched_route = null;
+		$m_route = null;
 		$i = 0;
-		
+
 		foreach(self::$routes as $name => $route) {
 			if($i++ >= $offset && $route->match($uri)) {
-				$matched_route = $route;
+				$m_route = clone $route; // clone to keep route params!
 				break;
 			}
 		}
 		
-		return $matched_route;
+		return $m_route;
 	}
 	
 	

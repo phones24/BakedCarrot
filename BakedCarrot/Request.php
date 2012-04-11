@@ -62,9 +62,15 @@ class Request
 	}
 	
 
-	public function isAjax()
+	public static function isAjax()
 	{
-		return isset($_SERVER['X_REQUESTED_WITH']) && $_SERVER['X_REQUESTED_WITH'] == 'XMLHttpRequest';
+		return isset($_SERVER['X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+	}
+	
+	
+	public static function isFlash()
+	{
+		return isset($_SERVER['X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'Shockwave Flash';
 	}
 	
 	

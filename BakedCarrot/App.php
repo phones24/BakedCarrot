@@ -237,6 +237,9 @@ class App
 					}
 				}
 				
+				// log the uri
+				Log::out(__METHOD__ . ' URI: ' . Request::getBaseUri() . Request::getUri(), Log::LEVEL_DEBUG);
+				
 				// only starts output buffering in development mode
 				if(!self::isDevMode()) {
 					ob_start();
@@ -253,11 +256,16 @@ class App
 					if(!$matched_route) {
 						App::notFound();
 					}
-				
+					
+					// log the pattern
 					Log::out(__METHOD__ . ' Matched route: "' . $matched_route->name . '", pattern: ' . 
 							$matched_route->getPatternRegex() . ', offset: ' . 
 							$matched_route->getOffset(), Log::LEVEL_DEBUG);
-							
+					
+					// log route params
+					Log::out(__METHOD__ . " Route params: \n" . print_r($matched_route->getParams(), true), 
+							Log::LEVEL_DEBUG); 
+					
 					$offset = $matched_route->getOffset();
 					
 					try {
@@ -324,10 +332,7 @@ class App
 				$e->getTraceAsString() . "\n";
 				
 		}
-		elseif(isset($_SERVER['HTTP_USER_AGENT']) && $_SERVER['HTTP_USER_AGENT'] == 'Shockwave Flash') {
-			print 'EXCEPTION (' . get_class($e) . '): ' . $e->getMessage();
-		}
-		elseif(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+		elseif(Request::isAjax() || Request::isFlash()) {
 			print 'EXCEPTION (' . get_class($e) . '): ' . $e->getMessage();
 		}
 		else {
