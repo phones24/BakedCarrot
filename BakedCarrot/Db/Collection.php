@@ -35,7 +35,7 @@ class Collection extends Query
 		}
 		
 		if(!$object) {
-			$object = $this->createObject();
+			$object = $this->create();
 		}
 		
 		return $object;
@@ -68,7 +68,7 @@ class Collection extends Query
 	}
 
 	
-	final public function createObject($data = null)
+	final public function create($data = null)
 	{
 		$class = self::loadModel($this->model);
 

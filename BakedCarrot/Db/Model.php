@@ -20,6 +20,7 @@ class Model implements ArrayAccess
 {
 	private $storage = null;
 	private $modified = false;
+	private $modified_fields = array();
 	private $collection = null;
 	private $columns_meta = null;
 	private $is_loaded = false;
@@ -61,6 +62,10 @@ class Model implements ArrayAccess
 	{
 		$this->storage = $data;
 		
+		foreach(array_keys($data) as $field) {
+			$this->modified_fields[$field] = false;
+		}
+		
 		$this->modified = false;
 		$this->is_loaded = true; // assume the object is loaded from database
 	}
@@ -74,7 +79,22 @@ class Model implements ArrayAccess
 	public function loaded()
 	{
 		return $this->is_loaded;
-		//return isset($this[$this->_primary_key]) && $this[$this->_primary_key] != 0;
+	}
+	
+	
+	/**
+	 * Checks if object or fields are modified
+	 *
+	 * @param string $filed name of the field
+	 * @return bool
+	 */
+	public function modified($field = null)
+	{
+		if(is_string($field)) {
+			return isset($this->modified_fields[$field]) ? $this->modified_fields[$field] : null;
+		}
+		
+		return $this->modified;
 	}
 	
 	
@@ -244,12 +264,18 @@ class Model implements ArrayAccess
 			foreach($fields as $field) {
 				$field = trim($field);
 				if($field) {
-					$this[$field] = isset($source[$field]) && !is_array($source[$field]) && !is_object($source[$field]) ? $source[$field] : null;
+					$value = isset($source[$field]) && !is_array($source[$field]) && !is_object($source[$field]) ? $source[$field] : null;
+					$this->modified_fields[$field] = !isset($this->storage[$field]) || $this->storage[$field] !== $value;
+					$this->storage[$field] = $value;
 				}
 			}
 		}
 		else {
-			$this->storage = array_merge($this->storage, $source);
+			$imported = array_merge($this->storage, $source);
+			foreach($imported as $field => $value) {
+				$this->modified_fields[$field] = !isset($this->storage[$field]) || $this->storage[$field] !== $value;
+			}
+			$this->storage = $imported;
 		}
 	}
 
@@ -272,6 +298,7 @@ class Model implements ArrayAccess
 		
 		$this->storage = null;
 		$this->modified = false;
+		$this->modified_fields = array();
 		$this->is_loaded = false;
 	}
 
@@ -369,7 +396,7 @@ class Model implements ArrayAccess
 	}
 	
 
-	public function owns($object, $foreign_key = null)
+	public function owns(Model $object, $foreign_key = null)
 	{
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
@@ -381,7 +408,7 @@ class Model implements ArrayAccess
 	}
 	
 	
-	public function ownsThrough($object, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	public function ownsThrough(Model $object, $join_table = null, $base_table_key = null, $associated_table_key = null)
 	{
 		$associated_model_info = $object->info();
 		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_model_info['table'] . '_id';
@@ -396,26 +423,9 @@ class Model implements ArrayAccess
 		return (bool)$result;
 	}
 	
-/*	
-	public function isBelongTo($object, $base_table_key = null)
+	
+	public function linkTo(Model $object, $foreign_key = null)
 	{
-		$associated_table = $object->getTable();
-		$associated_table_pk = $object->getPrimaryKey();
-		$base_table_key = $base_table_key ? $base_table_key : $object->getTable() . '_id';
-		
-		$result = Db::getCell('select count(*) from ' . $associated_table . 
-				' where ' . $associated_table_pk . ' = ?', array($this[$base_table_key]));
-
-		return (bool)$result;
-	}
-*/	
-	//$session->linkTo($user)
-	public function linkTo($object, $foreign_key = null)
-	{
-		if(!$object->loaded() || !$this->loaded()) {
-			return false;
-		}
-		
 		if($object->owns($this)) {
 			return false;
 		}
@@ -431,12 +441,8 @@ class Model implements ArrayAccess
 	}
 
 	
-	public function unlinkFrom($object, $foreign_key = null)
+	public function unlinkFrom(Model $object, $foreign_key = null)
 	{
-		if(!$object->loaded() || !$this->loaded()) {
-			return false;
-		}
-		
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
 
@@ -448,12 +454,8 @@ class Model implements ArrayAccess
 	}
 
 	
-	public function attach($object, $foreign_key = null)
+	public function attach(Model $object, $foreign_key = null)
 	{
-		if(!$this->loaded()) {
-			return false;
-		}
-		
 		if($this->owns($object)) {
 			return false;
 		}
@@ -469,12 +471,8 @@ class Model implements ArrayAccess
 	}
 
 	
-	public function attachThrough($object, $join_table = null, $base_table_key = null, $associated_table_key = null, $join_table_fields = null)
+	public function attachThrough(Model $object, $join_table = null, $base_table_key = null, $associated_table_key = null, $join_table_fields = null)
 	{
-		if(!$this->loaded()) {
-			return false;
-		}
-		
 		if($this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
 			return false;
 		}
@@ -502,12 +500,8 @@ class Model implements ArrayAccess
 	}
 	
 	
-	public function unattach($object, $foreign_key = null)
+	public function unattach(Model $object, $foreign_key = null)
 	{
-		if(!$this->loaded()) {
-			return false;
-		}
-		
 		if(!$this->owns($object)) {
 			return false;
 		}
@@ -524,12 +518,8 @@ class Model implements ArrayAccess
 	}
 
 	
-	public function unattachThrough($object, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	public function unattachThrough(Model $object, $join_table = null, $base_table_key = null, $associated_table_key = null)
 	{
-		if(!$this->loaded()) {
-			return false;
-		}
-		
 		if(!$this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
 			return false;
 		}
@@ -560,7 +550,8 @@ class Model implements ArrayAccess
 	public function offsetSet($offset, $value) 
 	{
 		$this->modified = true;
-
+		$this->modified_fields[$offset] = !isset($this->storage[$offset]) || $this->storage[$offset] !== $value;
+		
 		if(is_null($offset)) {
 			$this->storage[] = $value;
 		} 
@@ -578,6 +569,7 @@ class Model implements ArrayAccess
 	
 	public function offsetUnset($offset) 
 	{
+		unset($this->modified_fields[$offset]);
 		unset($this->storage[$offset]);
 	}
 	
@@ -693,7 +685,7 @@ class Model implements ArrayAccess
 				foreach($val as $num => $object) {
 					if(is_numeric($object)) {
 						$model_info = Orm::modelInfo($this->_has_many_through[$key]['model']);
-						$object = Orm::collection($this->_has_many_through[$key]['model'])->createObject(array($model_info['primary_key'] => $object));
+						$object = Orm::collection($this->_has_many_through[$key]['model'])->create(array($model_info['primary_key'] => $object));
 					}
 					
 					if(!is_a($object, Orm::MODEL_BASE_CLASS)) {
@@ -704,7 +696,7 @@ class Model implements ArrayAccess
 						$model_info = $object->info();
 						$model_name = $model_info['model'];
 					}
-					
+			
 					if($model_name == $this->_has_many_through[$key]['model']) {
 						$this->attachThrough(
 								$object, 
@@ -718,6 +710,7 @@ class Model implements ArrayAccess
 			}
 		}
 		else {
+			$this->modified_fields[$key] = !isset($this->storage[$key]) || $this->storage[$key] !== $val;
 			$this->storage[$key] = $val;
 		}
 	}
@@ -726,7 +719,6 @@ class Model implements ArrayAccess
 	public static function createJoinTable($table1, $table2)
 	{
 		$tables = array($table1, $table2);
-		
 		sort($tables);
 		
 		return implode('_', $tables);

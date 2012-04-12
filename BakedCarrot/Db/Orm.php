@@ -23,7 +23,7 @@ class Orm
 	 * @param string $name name of the model
 	 * @return Collection $collection collection object
 	 */
-    public static function &collection($name)
+	public static function &collection($name)
 	{
 		$name = ucfirst($name);
 		$collection = null;

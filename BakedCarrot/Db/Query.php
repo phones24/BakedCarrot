@@ -28,8 +28,9 @@ class Query
 	{
 		$result = array();
 		$sql = $this->compile();
-
-		if(($result_cached = OrmCache::getCachedQuery($sql, $this->values_accum)) !== false && $this->use_cache) {
+		$cache_key = OrmCache::genkey($sql, $this->values_accum);
+		
+		if(($result_cached = OrmCache::getCachedQuery($cache_key)) !== false && $this->use_cache) {
 			return $result_cached;
 		}
 		
@@ -37,35 +38,49 @@ class Query
 		$new_collection = Orm::collection($this->model);
 		
 		foreach($rows as $row) {
-			$result[$row['id']] = $new_collection->createObject($row);
+			$result[$row['id']] = $new_collection->create($row);
 		}
 		
 		if($this->use_cache) {
-			OrmCache::cacheQuery($sql, $this->values_accum, $this->getStatement('from'), $result);
+			OrmCache::cacheQuery($cache_key, $this->getStatement('from'), $result);
 		}
 		
 		return $result;
 	}
 
-	
+	// algo:
+	// 1. check external cache 
+	// 2. return if it's exists there
+	// 3. if not - check internal cache
+	// 4. load actual data from database
+	// 5. store in external cache
+	// 6. if unavailable - store in internal cache
 	public function findOne()
 	{
 		$this->remove('limit')->limit(1);
 		
 		$result = null;
 		$sql = $this->compile();
+		$cache_key = OrmCache::genkey($sql, $this->values_accum);
 		
-		if(($result_cached = OrmCache::getCachedQuery($sql, $this->values_accum)) !== false && $this->use_cache) {
+		if(($result_cached = OrmCache::getCachedQuery($cache_key)) !== false && $this->use_cache) {
+			return $result_cached;
+		}
+		
+		if(($result_cached = OrmCache::getFromInternalCache($cache_key)) !== false) {
 			return $result_cached;
 		}
 		
 		if($row = Db::getRow($sql, $this->values_accum)) {
-			$result = Orm::collection($this->model)->createObject($row);
+			$result = Orm::collection($this->model)->create($row);
 		}
 		
 		if($this->use_cache) {
-			OrmCache::cacheQuery($sql, $this->values_accum, $this->getStatement('from'), $result);
+			OrmCache::cacheQuery($cache_key, $this->getStatement('from'), $result);
+			return $result;
 		}
+		
+		OrmCache::storeInternal($cache_key, $this->getStatement('from'), $result);
 		
 		return $result;
 	}
@@ -75,7 +90,28 @@ class Query
 	{
 		$this->remove('select')->select('count(*)');
 		
-		return Db::getCell($this->compile(), $this->values_accum);
+		$result = null;
+		$sql = $this->compile();
+		$cache_key = OrmCache::genkey($sql, $this->values_accum);
+		
+		if(($result_cached = OrmCache::getCachedQuery($cache_key)) !== false && $this->use_cache) {
+			return $result_cached;
+		}
+		
+		if(($result_cached = OrmCache::getFromInternalCache($cache_key)) !== false) {
+			return $result_cached;
+		}
+
+		$result = Db::getCell($this->compile(), $this->values_accum);
+		
+		if($this->use_cache) {
+			OrmCache::cacheQuery($cache_key, $this->getStatement('from'), $result);
+			return $result;
+		}
+		
+		OrmCache::storeInternal($cache_key, $this->getStatement('from'), $result);
+
+		return $result;
 	}
 
 
@@ -237,7 +273,13 @@ class Query
 						throw new OrmException('Error in query: "from" statement is missing');
 					}
 					
-					$sql .= $statement . ' ' . $param . ' ';
+					if(in_array('where', $prev_stmts)) { // if WHERE already exists, add AND
+						$sql .= ' and ' . $param . ' ';
+					}
+					else {
+						$sql .= $statement . ' ' . $param . ' ';
+					}
+					
 					break;
 					
 				case 'limit':

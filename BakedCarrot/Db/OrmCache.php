@@ -11,6 +11,8 @@ class OrmCache
 	const KEYS_PREFIX = 'bc_orm_keys_';
 
 	private static $cache_driver = null;
+	private static $internal_cache_data = null;
+	private static $internal_cache_tables = null;
 
 	
 	private function __construct() 
@@ -30,17 +32,12 @@ class OrmCache
 	}
 	
 	
-	public static function cacheQuery($sql, $values, $table, $data)
+	public static function cacheQuery($key, $table, $data)
 	{
 		if(!self::$cache_driver) {
 			return false;
 		}
 	
-		$values_crc = crc32(serialize($values));
-		$sql_crc = crc32($sql);
-		
-		$key = self::DATA_PREFIX . $sql_crc . '_' . $values_crc;
-
 		self::$cache_driver->set($key, $data);
 		
 		// store the keys for table
@@ -58,16 +55,12 @@ class OrmCache
 	}
 	
 	
-	public static function getCachedQuery($sql, $values = null)
+	public static function getCachedQuery($key)
 	{
 		if(!self::$cache_driver) {
 			return false;
 		}
 	
-		$values_crc = crc32(serialize($values));
-		$sql_crc = crc32($sql);
-		
-		$key = self::DATA_PREFIX . $sql_crc . '_' . $values_crc;
 		$result = self::$cache_driver->get($key);
 		
 		return $result === null ? false : $result;
@@ -76,6 +69,14 @@ class OrmCache
 	
 	public static function clearCacheForTable($table)
 	{
+		if(isset(self::$internal_cache_tables[$table])) {
+			foreach(self::$internal_cache_tables[$table] as $key_to_wipe) {
+				unset(self::$internal_cache_data[$key_to_wipe]);
+			}
+			
+			unset(self::$internal_cache_tables[$table]);
+		}
+	
 		if(!self::$cache_driver) {
 			return false;
 		}
@@ -93,6 +94,32 @@ class OrmCache
 			
 			self::$cache_driver->delete($table_key);
 		}
+	}
+	
+	
+	public static function genKey($sql, $values)
+	{
+		$values_crc = crc32(serialize($values));
+		$sql_crc = crc32($sql);
+		
+		return self::DATA_PREFIX . $sql_crc . '_' . $values_crc;
+	}
+	
+	
+	public static function getFromInternalCache($key)
+	{
+		if(isset(self::$internal_cache_data[$key])) {
+			return self::$internal_cache_data[$key];
+		}
+	
+		return false;
+	}
+	
+	
+	public static function storeInternal($key, $table, $data)
+	{
+		self::$internal_cache_tables[$table][] = $key;
+		self::$internal_cache_data[$key] = $data;
 	}
 }
 
