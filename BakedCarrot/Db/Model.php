@@ -304,7 +304,7 @@ class Model implements ArrayAccess
 
 
 	/**
-	 * Reloads record from database
+	 * Reload record from database
 	 *
 	 * @return bool returns TRUE if records actully reloaded, FALSE if not
 	 */
@@ -401,8 +401,8 @@ class Model implements ArrayAccess
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
 		
-		$result = Db::getCell('select count(*) from ' . $associated_model_info['table'] . 
-				' where ' . $foreign_key . ' = ?', array($this->getId()));
+		$sql = 'select count(*) from ' . $associated_model_info['table'] . ' where ' . $foreign_key . ' = ?';
+		$result = Db::getCell($sql, array($this->getId()));
 
 		return (bool)$result;
 	}
@@ -424,42 +424,8 @@ class Model implements ArrayAccess
 	}
 	
 	
-	public function linkTo(Model $object, $foreign_key = null)
-	{
-		if($object->owns($this)) {
-			return false;
-		}
-		
-		$associated_model_info = $object->info();
-		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
-
-		OrmCache::clearCacheForTable($this->_table);
-		
-		Db::update($this->_table, array($foreign_key => $object->getId()), 'id = ?', array($this->getId()));
-		
-		return $this->reload();
-	}
-
-	
-	public function unlinkFrom(Model $object, $foreign_key = null)
-	{
-		$associated_model_info = $object->info();
-		$foreign_key = $foreign_key ? $foreign_key : $associated_model_info['table'] . '_id';
-
-		OrmCache::clearCacheForTable($this->_table);
-		
-		Db::update($this->_table, array($foreign_key => null), 'id = ?', array($this->getId()));
-		
-		return $this->reload();
-	}
-
-	
 	public function attach(Model $object, $foreign_key = null)
 	{
-		if($this->owns($object)) {
-			return false;
-		}
-		
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
 
@@ -473,10 +439,6 @@ class Model implements ArrayAccess
 	
 	public function attachThrough(Model $object, $join_table = null, $base_table_key = null, $associated_table_key = null, $join_table_fields = null)
 	{
-		if($this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
-			return false;
-		}
-		
 		$associated_model_info = $object->info();
 		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_model_info['table'] . '_id';
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
@@ -500,12 +462,8 @@ class Model implements ArrayAccess
 	}
 	
 	
-	public function unattach(Model $object, $foreign_key = null)
+	public function detach(Model $object, $foreign_key = null)
 	{
-		if(!$this->owns($object)) {
-			return false;
-		}
-		
 		$associated_model_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
 
@@ -514,16 +472,11 @@ class Model implements ArrayAccess
 		Db::update($associated_model_info['table'], array($foreign_key => null), 'id = ?', array($object->getId()));
 		
 		return $this->reload();
-		
 	}
 
 	
-	public function unattachThrough(Model $object, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	public function detachThrough(Model $object, $join_table = null, $base_table_key = null, $associated_table_key = null)
 	{
-		if(!$this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
-			return false;
-		}
-		
 		$associated_model_info = $object->info();
 		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_model_info['table'] . '_id';
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';

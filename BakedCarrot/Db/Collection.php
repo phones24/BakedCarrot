@@ -15,9 +15,7 @@ class Collection extends Query
 	{
 		$this->model = ucfirst($model);
 		$this->model_info = Orm::modelInfo($model);
-		
-		// default query
-		$this->select('*')->from($this->model_info['table']);
+		$this->reset();
 	}
 	
 	
@@ -25,13 +23,8 @@ class Collection extends Query
 	{	
 		$object = null;
 		
-		if(is_numeric($id)) {
-			$object = $this->
-				reset()->
-				select('*')->
-				from($this->model_info['table'])->
-				where($this->model_info['primary_key'] . ' = ?', array($id))->
-				findOne();
+		if(mb_strlen($id) > 0) {
+			$object = $this->where($this->model_info['primary_key'] . ' = ?', array($id))->findOne();
 		}
 		
 		if(!$object) {
@@ -39,6 +32,17 @@ class Collection extends Query
 		}
 		
 		return $object;
+	}
+	
+	
+	public function reset()
+	{	
+		parent::reset();
+		
+		// default query
+		$this->select('*')->from($this->model_info['table']);
+		
+		return $this;
 	}
 	
 	
