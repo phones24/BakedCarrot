@@ -11,7 +11,7 @@ class CacheApc extends CacheDriver
 	public function __construct($params)
 	{
 		if(!extension_loaded('apc')) {
-			throw new CacheException('APC extension is not loaded');
+			throw new BakedCarrotCacheException('APC extension is not loaded');
 		}
 	}
 
@@ -19,7 +19,7 @@ class CacheApc extends CacheDriver
 	public function set($key, $value, $ttl)
 	{
 		if(!apc_store($key, $value, $ttl)) {
-			throw new CacheException('Cannot store value with key ' . $key);
+			throw new BakedCarrotCacheException('Cannot store value with key ' . $key);
 		}
 	}
 	

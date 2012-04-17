@@ -4,7 +4,7 @@
  *
  * @package BakedCarrot
  * @author Yury Vasiliev
- * @version 0.3.5
+ * @version 0.4
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
@@ -24,7 +24,7 @@ if(!defined('APPPATH')) {
 
  
 // version of library
-define('BAKEDCARROT_VERSION', '0.3.5');
+define('BAKEDCARROT_VERSION', '0.4');
 
 // full path to external libraries
 define('VENDPATH', SYSPATH . 'Vendors' . DIRECTORY_SEPARATOR);
@@ -38,8 +38,8 @@ define('CTRLPATH', APPPATH . 'controllers' . DIRECTORY_SEPARATOR);
 // full path to views
 define('VIEWSPATH', APPPATH . 'views' . DIRECTORY_SEPARATOR);
 
-// full path to models
-define('MODELPATH', APPPATH . 'models' . DIRECTORY_SEPARATOR);
+// full path to entities
+define('ENTPATH', APPPATH . 'entities' . DIRECTORY_SEPARATOR);
 
 // full path to collections
 define('COLLPATH', APPPATH . 'collections' . DIRECTORY_SEPARATOR);
@@ -176,17 +176,12 @@ class App
 			
 			// creating base objects
 			Log::create();
+			Request::create();
 			
 			// saving application params
 			self::$params = $params;
-			
-			// taking care of magic quotes
-			if(get_magic_quotes_gpc()) {
-				$_GET = self::clearMagicQuotes($_GET);
-				$_POST = self::clearMagicQuotes($_POST);
-				$_COOKIE = self::clearMagicQuotes($_COOKIE);
-			}
 
+			// unregister globals
 			if(ini_get('register_globals')) {
 				self::unregisterGlobals(array('_POST', '_GET', '_COOKIE', '_REQUEST', '_SERVER', '_ENV', '_FILES'));
 				ini_set('register_globals', false);
@@ -373,9 +368,6 @@ class App
 	 *
 	 * @param $errno error number
 	 * @param $errstr error message
-	 * @param $errfile source file
-	 * @param $errline line in file
-	 * @param $errcontext the context
 	 * @return bool
 	 * @static
 	 */
@@ -473,24 +465,6 @@ class App
 		}
 		
 		return $module_object;
-	}
-	
-	
-	/**
-	 * Recursively remove quotes from string or array
-	 *
-	 * @param $data source
-	 * @return cleared data
-	 * @static
-	 */
-	private static function clearMagicQuotes($data)
-	{
-		if(is_array($data)) {
-			return array_map(array('self', 'clearMagicQuotes'), $data);
-		}
-		else {
-			return stripslashes($data);
-		}
 	}
 	
 	

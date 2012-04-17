@@ -9,7 +9,7 @@
  * @todo remove thumbnail creation from the module
 */
 
-require 'FilelibException.php';
+require 'BakedCarrotFilelibException.php';
 
 
 class Filelib extends ParamLoader
@@ -34,7 +34,7 @@ class Filelib extends ParamLoader
 		$this->setLoaderPrefix('filelib');
 		
 		if(!($this->root_dir = $this->loadParam('root_dir', $params)) || !is_dir($this->root_dir)) {
-			throw new FilelibException('Invalid root directory: ' . $this->root_dir);
+			throw new BakedCarrotFilelibException('Invalid root directory: ' . $this->root_dir);
 		}
 		
 		$this->thumbnails = $this->loadParam('thumbnails', $params, $this->thumbnails);
@@ -148,16 +148,16 @@ class Filelib extends ParamLoader
 		
 		if(is_uploaded_file($src_file_path)) {
 			if(!@move_uploaded_file($src_file_path, $dst_file_path)) {
-				throw new FilelibException('Cannot move uploaded file');
+				throw new BakedCarrotFilelibException('Cannot move uploaded file');
 			}
 		}
 		else {
 			if($remove_orig && !rename($src_file_path, $dst_file_path)) {
-				throw new FilelibException('Cannot move file ' . $src_file_path . ' to ' . $dst_file_path);
+				throw new BakedCarrotFilelibException('Cannot move file ' . $src_file_path . ' to ' . $dst_file_path);
 			}
 			
 			if(!$remove_orig && !copy($src_file_path, $dst_file_path)) {
-				throw new FilelibException('Cannot copy file ' . $src_file_path . ' to ' . $dst_file_path);
+				throw new BakedCarrotFilelibException('Cannot copy file ' . $src_file_path . ' to ' . $dst_file_path);
 			}
 				
 			chmod($dst_file_path, $file_mask);
@@ -175,7 +175,7 @@ class Filelib extends ParamLoader
 		$real_dir = $this->getCurrentDir() . $newdir . DIRECTORY_SEPARATOR;
 		
 		if(strpos($real_dir, $this->root_dir) !== 0) {
-			throw new FilelibException('Invalid directory: ' . $real_dir);
+			throw new BakedCarrotFilelibException('Invalid directory: ' . $real_dir);
 		}
 		
 		if(is_dir($real_dir)) {
@@ -183,7 +183,7 @@ class Filelib extends ParamLoader
 		}
 		
 		if(!mkdir($real_dir, $dir_mask)) {
-			throw new FilelibException('Cannot create directory: ' . $real_dir);
+			throw new BakedCarrotFilelibException('Cannot create directory: ' . $real_dir);
 		}
 		
 		@chmod($real_dir, $dir_mask);
@@ -196,11 +196,11 @@ class Filelib extends ParamLoader
 		$real_dir = $this->getCurrentDir() . $dir . DIRECTORY_SEPARATOR;
 		
 		if(!$this->isValidDir($real_dir)) {
-			throw new FilelibException('Invalid directory: ' . $real_dir);
+			throw new BakedCarrotFilelibException('Invalid directory: ' . $real_dir);
 		}
 		
 		if(!$this->rmdirRecursive($real_dir)) {
-			throw new FilelibException('Cannot remove directory: ' . $real_dir);
+			throw new BakedCarrotFilelibException('Cannot remove directory: ' . $real_dir);
 		}
 	}
 	
@@ -210,24 +210,24 @@ class Filelib extends ParamLoader
 		$file = $this->fixPath($file);
 		
 		if(!$file) {
-			throw new FilelibException('Invalid filename: ' . $file);
+			throw new BakedCarrotFilelibException('Invalid filename: ' . $file);
 		}
 		
 		$orig_file = realpath($this->getCurrentDir() . $file);
 		$pathinfo_orig = pathinfo($orig_file);	
 		
 		if(!isset($pathinfo_orig['dirname'])) {
-			throw new FilelibException('Invalid file path: ' . $orig_file);
+			throw new BakedCarrotFilelibException('Invalid file path: ' . $orig_file);
 		}
 		
 		if(!is_file($orig_file) || !is_readable($orig_file)) {
-			throw new FilelibException('File not found: ' . $orig_file);
+			throw new BakedCarrotFilelibException('File not found: ' . $orig_file);
 		}
 		
 		$this->runCallback('before_remove_file', array($orig_file));
 		
 		if(!unlink($orig_file)) {
-			throw new FilelibException('Cannot remove file: ' . $orig_file);
+			throw new BakedCarrotFilelibException('Cannot remove file: ' . $orig_file);
 		}
 		
 		// remove cache files
@@ -255,7 +255,7 @@ class Filelib extends ParamLoader
 		$current_dir_local = $this->getCurrentDir();
 		
 		if(!($handle = @opendir($current_dir_local))) {
-			throw new FilelibException('Cannot read directory contents ' . $current_dir_local);
+			throw new BakedCarrotFilelibException('Cannot read directory contents ' . $current_dir_local);
 		}
 
 		while(false !== ($file = readdir($handle))) { 

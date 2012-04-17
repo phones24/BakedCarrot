@@ -7,7 +7,7 @@
  * 
  */
 
-require 'AuthException.php';
+require 'BakedCarrotAuthException.php';
 require 'AuthDriver.php';
 
 
@@ -27,7 +27,7 @@ class Auth extends ParamLoader
 		$this->setLoaderPrefix('auth');
 		
 		if(!($driver_class = $this->loadParam('driver', $params))) {
-			throw new AuthException('"driver" is not defined');
+			throw new BakedCarrotAuthException('"driver" is not defined');
 		}
 		
 		$this->session_name = $this->loadParam('session_name', $params, 'bakedcarrot');
@@ -62,7 +62,7 @@ class Auth extends ParamLoader
 		}
 		
 		if(!$ret) {
-			throw new AuthException('Cannot set session cookie');
+			throw new BakedCarrotAuthException('Cannot set session cookie');
 		}
 		
 		return $user;
@@ -96,7 +96,7 @@ class Auth extends ParamLoader
 			$user = $this->driver->getAnonUser();
 
 			if(!$user) {
-				throw new AuthException('Anonymous user not found');
+				throw new BakedCarrotAuthException('Anonymous user not found');
 			}
 		}
 		
@@ -119,7 +119,7 @@ class Auth extends ParamLoader
 				$this->user = $this->getAnonUser();
 			}
 		}
-		
+
 		return $this->user;
 	}
 	
@@ -132,9 +132,7 @@ class Auth extends ParamLoader
 	
 	public function loggedIn()
 	{
-		$anon_user = $this->getAnonUser();
-		
-		return ((bool)$this->user && $anon_user != $this->user);
+		return (bool)$this->user;
 	}
 	
 	

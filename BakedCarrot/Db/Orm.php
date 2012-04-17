@@ -7,20 +7,20 @@
  */
 class Orm
 {
-	const MODEL_CLASS_PREFIX = 'Model';
-	const MODEL_BASE_CLASS = 'Model';
+	const ENTITY_CLASS_PREFIX = 'Entity';
+	const ENTITY_BASE_CLASS = 'Entity';
 	const COLLECTION_CLASS_PREFIX = 'Collection';
 	const COLLECTION_BASE_CLASS = 'Collection';
 	const JOIN_TABLE_FIELD_PREFIX = '__';
 	
 	private static $collections = array();
-	private static $model_info = array();
+	private static $entity_info = array();
 
 	
 	/**
-	 * Creates a new object of given model
+	 * Creates a new object of given entity
 	 *
-	 * @param string $name name of the model
+	 * @param string $name name of the entity
 	 * @return Collection $collection collection object
 	 */
 	public static function &collection($name)
@@ -39,7 +39,7 @@ class Orm
 				$collection = new $class($name);
 				
 				if(!is_subclass_of($collection, self::COLLECTION_BASE_CLASS)) {
-					throw new OrmException("Class $class is not subclass of " . self::COLLECTION_BASE_CLASS);
+					throw new BakedCarrotOrmException("Class $class is not subclass of " . self::COLLECTION_BASE_CLASS);
 				}
 			}
 			else {
@@ -57,37 +57,37 @@ class Orm
 	
 
 	/**
-	 * Returns the information about given model
+	 * Returns the information about given entity
 	 *
-	 * @param string $model_name name of the model
+	 * @param string $entity_name name of the entity
 	 * @return array
 	 */
-	public static function &modelInfo($model_name)
+	public static function &entityInfo($entity_name)
 	{
-		if(isset(self::$model_info[$model_name])) {
-			return self::$model_info[$model_name];
+		if(isset(self::$entity_info[$entity_name])) {
+			return self::$entity_info[$entity_name];
 		}
 		
-		$class = Collection::loadModel($model_name);
+		$class = Collection::loadEntity($entity_name);
 		
 		if(class_exists($class)) {
-			$object = new $class($model_name);
+			$object = new $class($entity_name);
 			
-			if(!is_subclass_of($object, Orm::MODEL_BASE_CLASS) && get_class($object) != Orm::MODEL_BASE_CLASS) {
-				throw new OrmException("Class $class is not a subclass of " . Orm::MODEL_BASE_CLASS);
+			if(!is_subclass_of($object, Orm::ENTITY_BASE_CLASS) && get_class($object) != Orm::ENTITY_BASE_CLASS) {
+				throw new BakedCarrotOrmException("Class $class is not a subclass of " . Orm::ENTITY_BASE_CLASS);
 			}
 			
 		}
 		else {
-			$class = Orm::MODEL_BASE_CLASS;
-			$object = new $class($model_name);
+			$class = Orm::ENTITY_BASE_CLASS;
+			$object = new $class($entity_name);
 		}
 		
-		self::$model_info[$model_name] = $object->info();
+		self::$entity_info[$entity_name] = $object->info();
 		
 		unset($object);
 		
-		return self::$model_info[$model_name];
+		return self::$entity_info[$entity_name];
 	}
 }
 

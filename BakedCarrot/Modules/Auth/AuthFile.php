@@ -22,7 +22,7 @@ class AuthFile extends AuthDriver
 		$this->file = $this->loadParam('file', $params);
 		
 		if(!$this->file) {
-			throw new AuthException('"auth_file" is not defined');
+			throw new BakedCarrotAuthException('"auth_file" is not defined');
 		}
 		
 		$this->readFile();
@@ -121,11 +121,11 @@ class AuthFile extends AuthDriver
 		}
 	
 		if(!is_file($this->file) || !is_readable($this->file)) {
-			throw new AuthException('User database file is not readable');
+			throw new BakedCarrotAuthException('User database file is not readable');
 		}
 		
 		if(!($rows = file($this->file))) {
-			throw new AuthException('User database contains no valid data');
+			throw new BakedCarrotAuthException('User database contains no valid data');
 		}
 		
 		foreach($rows as $row) {
@@ -155,7 +155,7 @@ class AuthFile extends AuthDriver
 	private function writeFile()
 	{
 		if(!is_file($this->file) || !is_writable($this->file)) {
-			throw new AuthException('User database file is not writable');
+			throw new BakedCarrotAuthException('User database file is not writable');
 		}
 		
 		if(!is_array($this->users)) {

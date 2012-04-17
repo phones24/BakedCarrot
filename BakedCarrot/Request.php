@@ -6,12 +6,55 @@
  * @package BakedCarrot
  * 
  */
- 
 class Request
 {
+	/**
+	 * List received headers
+	 * @var array
+	 * @static
+	 */
 	private static $headers = null;
+
+	/**
+	 * Base URI
+	 * @var string
+	 * @static
+	 */
 	private static $base_uri = null;
+
+	/**
+	 * Request URI
+	 * @var string
+	 * @static
+	 */
 	private static $uri = null;
+	
+	
+	/**
+	 * Private constructor
+	 *
+	 * @return void
+	 */
+	private function __construct()
+	{
+	}
+	
+	
+	/**
+	 * Creates instance of Request class
+	 *
+	 * @return void
+	 * @static
+	 */
+	public static function create()
+	{
+		// taking care of magic quotes
+		if(get_magic_quotes_gpc()) {
+			$_GET = self::clearMagicQuotes($_GET);
+			$_POST = self::clearMagicQuotes($_POST);
+			$_COOKIE = self::clearMagicQuotes($_COOKIE);
+		}
+	}
 	
 	
 	public static function getMethod()
@@ -71,6 +114,36 @@ class Request
 	public static function isFlash()
 	{
 		return isset($_SERVER['X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'Shockwave Flash';
+	}
+	
+	
+	public static function GET($var_name, $default = null)
+	{
+		if(!isset($_GET[$var_name])) {
+			return $default;
+		}
+		
+		return $_GET[$var_name];
+	}
+	
+	
+	public static function POST($var_name, $default = null)
+	{
+		if(!isset($_POST[$var_name])) {
+			return $default;
+		}
+		
+		return $_POST[$var_name];
+	}
+	
+	
+	public static function COOKIE($var_name, $default = null)
+	{
+		if(!isset($_COOKIE[$var_name])) {
+			return $default;
+		}
+		
+		return $_COOKIE[$var_name];
 	}
 	
 	
@@ -181,4 +254,21 @@ class Request
 		self::$uri = null;
 	}
 
+	
+	/**
+	 * Recursively remove quotes from string or array
+	 *
+	 * @param $data source
+	 * @return cleared data
+	 * @static
+	 */
+	private static function clearMagicQuotes($data)
+	{
+		if(is_array($data)) {
+			return array_map(array('self', 'clearMagicQuotes'), $data);
+		}
+		else {
+			return stripslashes($data);
+		}
+	}
 }	

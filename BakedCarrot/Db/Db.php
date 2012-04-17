@@ -24,7 +24,7 @@ class Db
 	
 		if(!$dsn) {
 			if(!Config::checkVar('db_dsn')) {
-				throw new DbException('Database access parameters are not properly configured');
+				throw new BakedCarrotDbException('Database access parameters are not properly configured');
 			}
 			
 			$dsn = Config::getVar('db_dsn');

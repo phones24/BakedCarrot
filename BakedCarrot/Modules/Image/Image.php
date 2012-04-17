@@ -6,7 +6,7 @@
  * @subpackage Image
  */
 
-require 'ImageException.php';
+require 'BakedCarrotImageException.php';
 	
 	
 class Image extends ParamLoader
@@ -33,7 +33,7 @@ class Image extends ParamLoader
 	public function __construct(array $params = null)
 	{
 		if(!$info = @gd_info()) {
-			throw new ImageException('GD extension not installed');
+			throw new BakedCarrotImageException('GD extension not installed');
 		}
 		
 		if(imagetypes() & IMG_PNG) {
@@ -66,17 +66,17 @@ class Image extends ParamLoader
 	public function loadFromFile($file)
 	{
 		if(!is_readable($file) || is_dir($file)) {
-			throw new ImageException('File is unreadable: ' . $file);
+			throw new BakedCarrotImageException('File is unreadable: ' . $file);
 		}
 		
 		$this->image_info = @getimagesize($file);
 		
 		if(!$this->image_info) {
-			throw new ImageException('Invalid file format');
+			throw new BakedCarrotImageException('Invalid file format');
 		}
 		
 		if(!$this->formatSupported($this->image_info[2])) {
-			throw new ImageException('File format not supported');
+			throw new BakedCarrotImageException('File format not supported');
 		}
 
 		$this->image_file = $file;
@@ -89,15 +89,15 @@ class Image extends ParamLoader
 	public function loadFromUrl($url)
 	{
 		if(strpos($url, 'http://') !== 0 && strpos($url, 'https://') !== 0) {
-			throw new ImageException('Wrong url format');
+			throw new BakedCarrotImageException('Wrong url format');
 		}
 	
 		if(!($result = @file_get_contents($url))) {
-			throw new ImageException('Cannot load image or file format not supported');
+			throw new BakedCarrotImageException('Cannot load image or file format not supported');
 		}
 		
 		if(($this->handle = imagecreatefromstring($result)) === false) {
-			throw new ImageException('Cannot create image from url');
+			throw new BakedCarrotImageException('Cannot create image from url');
 		}
 		
 		unset($result);
@@ -112,24 +112,24 @@ class Image extends ParamLoader
 	public function upload($file, $dest, $remove_orig = true)
 	{
 		if(!is_readable($file)) {
-			throw new ImageException('File is unreadable: ' . $file);
+			throw new BakedCarrotImageException('File is unreadable: ' . $file);
 		}
 		
 		$this->image_info = @getimagesize($file);
 		
 		if(!$this->image_info) {
-			throw new ImageException('Invalid file format');
+			throw new BakedCarrotImageException('Invalid file format');
 		}
 		
 		if(!$this->formatSupported($this->image_info[2])) {
-			throw new ImageException('File format not supported');
+			throw new BakedCarrotImageException('File format not supported');
 		}
 		
 		$orig_file_info = pathinfo($dest);
 		
 		if(!is_dir($orig_file_info['dirname'])) {
 			if(!mkdir($orig_file_info['dirname'], $this->dir_mask, true)) {
-				throw new ImageException('Cannot create directory: ' . $orig_file_info['dirname']);
+				throw new BakedCarrotImageException('Cannot create directory: ' . $orig_file_info['dirname']);
 			}
 		}
 		
@@ -140,16 +140,16 @@ class Image extends ParamLoader
 		
 		if(is_uploaded_file($file)) {
 			if(!move_uploaded_file($file, $dest)) {
-				throw new ImageException('File upload error: ' . $file);
+				throw new BakedCarrotImageException('File upload error: ' . $file);
 			}
 		}
 		else {
 			if($remove_orig && !rename($file, $dest)) {
-				throw new ImageException('Cannot move file ' . $file . ' to ' . $dest);
+				throw new BakedCarrotImageException('Cannot move file ' . $file . ' to ' . $dest);
 			}
 			
 			if(!$remove_orig && !copy($file, $dest)) {
-				throw new ImageException('Cannot copy file ' . $file . ' to ' . $dest);
+				throw new BakedCarrotImageException('Cannot copy file ' . $file . ' to ' . $dest);
 			}
 				
 			chmod($dest, $this->file_mask);
@@ -180,7 +180,7 @@ class Image extends ParamLoader
 		}
 		
 		if(!$coef) {
-			throw new ImageException('Invalid "base" parameter');
+			throw new BakedCarrotImageException('Invalid "base" parameter');
 		}
 		
 		$new_width = floor($this->width / $coef);
@@ -189,7 +189,7 @@ class Image extends ParamLoader
 		$im_new = $this->createEmpty($new_width, $new_height);
 		
 		if(!imagecopyresampled($im_new, $this->handle, 0, 0, 0, 0, $new_width, $new_height, $this->width, $this->height)) {
-			throw new ImageException('Image resizing failed');
+			throw new BakedCarrotImageException('Image resizing failed');
 		}
 		
 		imagedestroy($this->handle);
@@ -229,7 +229,7 @@ class Image extends ParamLoader
 		}
 		
 		if(!$ret) {
-			throw new ImageException('Image cropping failed');
+			throw new BakedCarrotImageException('Image cropping failed');
 		}
 		
 		imagedestroy($this->handle);
@@ -255,7 +255,7 @@ class Image extends ParamLoader
 		$div = array_sum(array_map('array_sum', $matrix));  
 		 
 		if(!imageconvolution($this->handle, $matrix, $div, 0)) {
-			throw new ImageException('Image sharpen failed');
+			throw new BakedCarrotImageException('Image sharpen failed');
 		}
 		
 		$this->width = imagesx($this->handle); 
@@ -274,7 +274,7 @@ class Image extends ParamLoader
 		array_unshift($arg_list, $this->handle);
 		
 		if(!call_user_func_array('imagefilter', $arg_list)) {
-			throw new ImageException('Cannot apply filter');
+			throw new BakedCarrotImageException('Cannot apply filter');
 		}
 		 
 		return $this;
@@ -339,7 +339,7 @@ class Image extends ParamLoader
 		
 		if(!is_dir($file_info['dirname'])) {
 			if(!mkdir($file_info['dirname'], $this->dir_mask, true)) {
-				throw new ImageException('Cannot create directory: ' . $file_info['dirname']);
+				throw new BakedCarrotImageException('Cannot create directory: ' . $file_info['dirname']);
 			}
 		}
 		
@@ -368,7 +368,7 @@ class Image extends ParamLoader
 		}
 		
 		if($res == false) {
-			throw new ImageException('Cannot save file ' . $file);
+			throw new BakedCarrotImageException('Cannot save file ' . $file);
 		}
 		
 		$this->mime = image_type_to_mime_type($this->type);
@@ -435,7 +435,7 @@ class Image extends ParamLoader
 		}
 		
 		if(is_null($this->handle)) {
-			throw new ImageException('Cannot load image data from file ' . $this->image_file);
+			throw new BakedCarrotImageException('Cannot load image data from file ' . $this->image_file);
 		}
 	}
 	
@@ -464,7 +464,7 @@ class Image extends ParamLoader
 	private function checkHandle()
 	{
 		if(is_null($this->handle)) {
-			throw new ImageException('No image loaded');
+			throw new BakedCarrotImageException('No image loaded');
 		}
 	}
 

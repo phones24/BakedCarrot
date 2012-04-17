@@ -10,16 +10,16 @@
  
 class Query
 {
-	protected $model = Orm::MODEL_BASE_CLASS;
+	protected $entity_name = Orm::ENTITY_BASE_CLASS;
 	private $sql_accum = null;
 	private $values_accum = null;
 	private $use_cache = false;
 	
 
-	public function __construct($model = null)
+	public function __construct($entity_name = null)
 	{
-		if($model) {
-			$this->model = $model;
+		if($entity_name) {
+			$this->entity_name = $entity_name;
 		}
 	}
 
@@ -35,7 +35,7 @@ class Query
 		}
 		
 		$rows = Db::getAll($this->compile(), $this->values_accum);
-		$new_collection = Orm::collection($this->model);
+		$new_collection = Orm::collection($this->entity_name);
 		
 		foreach($rows as $row) {
 			$result[$row['id']] = $new_collection->create($row);
@@ -72,7 +72,7 @@ class Query
 		}
 		
 		if($row = Db::getRow($sql, $this->values_accum)) {
-			$result = Orm::collection($this->model)->create($row);
+			$result = Orm::collection($this->entity_name)->create($row);
 		}
 		
 		if($this->use_cache) {
@@ -117,7 +117,7 @@ class Query
 
 	public function setModel($class_name)
 	{
-		$this->model = $class_name;
+		$this->entity_name = $class_name;
 
 		return $this;
 	}
@@ -262,7 +262,7 @@ class Query
 				case 'from':
 					if(!in_array('select', $prev_stmts) && !in_array('delete', $prev_stmts)) {
 						
-						throw new OrmException('Error in query: "select" statement is missing');
+						throw new BakedCarrotOrmException('Error in query: "select" statement is missing');
 					}
 					
 					$sql .= $statement . ' ' . $param . ' ';
@@ -270,7 +270,7 @@ class Query
 					
 				case 'where':
 					if(!in_array('from', $prev_stmts)) {
-						throw new OrmException('Error in query: "from" statement is missing');
+						throw new BakedCarrotOrmException('Error in query: "from" statement is missing');
 					}
 					
 					if(in_array('where', $prev_stmts)) { // if WHERE already exists, add AND
@@ -284,7 +284,7 @@ class Query
 					
 				case 'limit':
 					if(!in_array('from', $prev_stmts)) {
-						throw new OrmException('Error in query: "from" statement is missing');
+						throw new BakedCarrotOrmException('Error in query: "from" statement is missing');
 					}
 					
 					$sql .= $statement . ' ' . $param . ' ';
@@ -292,7 +292,7 @@ class Query
 					
 				case 'offset':
 					if(!in_array('from', $prev_stmts)) {
-						throw new OrmException('Error in query: "from" statement is missing');
+						throw new BakedCarrotOrmException('Error in query: "from" statement is missing');
 					}
 					
 					$sql .= $statement . ' ' . $param . ' ';
@@ -300,7 +300,7 @@ class Query
 
 				case 'order':
 					if(!in_array('from', $prev_stmts)) {
-						throw new OrmException('Error in query: "from" statement is missing');
+						throw new BakedCarrotOrmException('Error in query: "from" statement is missing');
 					}
 					
 					$sql .= $statement . ' by ' . $param . ' ';

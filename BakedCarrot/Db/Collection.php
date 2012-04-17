@@ -8,13 +8,13 @@
  
 class Collection extends Query
 {
-	private $model_info = null;
+	private $entity_info = null;
 	
 	
-	public function __construct($model)
+	public function __construct($entity_name)
 	{
-		$this->model = ucfirst($model);
-		$this->model_info = Orm::modelInfo($model);
+		$this->entity_name = ucfirst($entity_name);
+		$this->entity_info = Orm::entityInfo($entity_name);
 		$this->reset();
 	}
 	
@@ -24,7 +24,7 @@ class Collection extends Query
 		$object = null;
 		
 		if(mb_strlen($id) > 0) {
-			$object = $this->where($this->model_info['primary_key'] . ' = ?', array($id))->findOne();
+			$object = $this->where($this->entity_info['primary_key'] . ' = ?', array($id))->findOne();
 		}
 		
 		if(!$object) {
@@ -40,13 +40,13 @@ class Collection extends Query
 		parent::reset();
 		
 		// default query
-		$this->select('*')->from($this->model_info['table']);
+		$this->select('*')->from($this->entity_info['table']);
 		
 		return $this;
 	}
 	
 	
-	public function swap(Model $object1, Model $object2, $property)
+	public function swap(Entity $object1, Entity $object2, $property)
 	{
 		$old_property = $object1[$property];
 		
@@ -58,13 +58,13 @@ class Collection extends Query
 	}
 
 
-	static function loadModel($clsss)
+	static function loadEntity($clsss)
 	{
 		$class = ucfirst($clsss);
 		
 		if(!class_exists($class)) {
-			if(is_file(MODELPATH . $class . EXT)) {
-				require MODELPATH . $class . EXT;
+			if(is_file(ENTPATH . $class . EXT)) {
+				require ENTPATH . $class . EXT;
 			}
 		}
 		
@@ -74,27 +74,27 @@ class Collection extends Query
 	
 	final public function create($data = null)
 	{
-		$class = self::loadModel($this->model);
+		$class = self::loadEntity($this->entity_name);
 
 		if(class_exists($class)) {
-			$object = new $class($this->model);
-			
-			if(!is_subclass_of($object, Orm::MODEL_BASE_CLASS) && get_class($object) != Orm::MODEL_BASE_CLASS) {
-				throw new OrmException("Class $class is not a subclass of " . Orm::MODEL_BASE_CLASS);
+			$object = new $class($this->entity_name);
+
+			if(!is_subclass_of($object, Orm::ENTITY_BASE_CLASS) && get_class($object) != Orm::ENTITY_BASE_CLASS) {
+				throw new BakedCarrotOrmException("Class $class is not a subclass of " . Orm::ENTITY_BASE_CLASS);
 			}
 			
 		}
 		else {
-			$class = Orm::MODEL_BASE_CLASS;
-			$object = new $class($this->model);
+			$class = Orm::ENTITY_BASE_CLASS;
+			$object = new $class($this->entity_name);
 		}
 		
 		if(is_array($data) && !empty($data)) {
 			$object->hydrate($data);
-			$object->runEvent('onLoad');
+			$object->trigger('onLoad');
 		}
 		else {
-			$object->runEvent('onCreate');
+			$object->trigger('onCreate');
 		}
 		
 		return $object;
@@ -103,9 +103,6 @@ class Collection extends Query
 
 	final public function &info() 
 	{
-		return $this->model_info;
+		return $this->entity_info;
 	}
-	
-
-	
 }

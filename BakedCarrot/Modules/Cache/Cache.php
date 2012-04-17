@@ -5,7 +5,7 @@
  * @package BakedCarrot
  * @subpackage Cache
  */
-require 'CacheException.php';
+require 'BakedCarrotCacheException.php';
 require 'CacheDriver.php';
 
 
@@ -19,7 +19,7 @@ class Cache extends ParamLoader
 		$this->setLoaderPrefix('cache');
 	
 		if(!($driver_class = $this->loadParam('driver', $params))) {
-			throw new CacheException('"driver" is not defined');
+			throw new BakedCarrotCacheException('"driver" is not defined');
 		}
 		
 		$driver_class = 'Cache' . $driver_class;
