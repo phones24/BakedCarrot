@@ -115,7 +115,7 @@ class Query
 	}
 
 
-	public function setModel($class_name)
+	public function setEntity($class_name)
 	{
 		$this->entity_name = $class_name;
 

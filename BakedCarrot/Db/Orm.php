@@ -7,7 +7,6 @@
  */
 class Orm
 {
-	const ENTITY_CLASS_PREFIX = 'Entity';
 	const ENTITY_BASE_CLASS = 'Entity';
 	const COLLECTION_CLASS_PREFIX = 'Collection';
 	const COLLECTION_BASE_CLASS = 'Collection';
