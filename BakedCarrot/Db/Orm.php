@@ -12,7 +12,6 @@ class Orm
 	const COLLECTION_BASE_CLASS = 'Collection';
 	const JOIN_TABLE_FIELD_PREFIX = '__';
 	
-	private static $collections = array();
 	private static $entity_info = array();
 
 	
@@ -24,31 +23,24 @@ class Orm
 	 */
 	public static function &collection($name)
 	{
-		$name = ucfirst($name);
 		$collection = null;
+		$name = ucfirst($name);
+		$class = self::COLLECTION_CLASS_PREFIX . $name;
 		
-		if(!isset(self::$collections[$name])) {
-			$class = self::COLLECTION_CLASS_PREFIX . $name;
+		if(!class_exists($class) && is_file(COLLPATH . $name . EXT)) {
+			require COLLPATH . $name . EXT;
+		}
+		
+		if(class_exists($class)) {
+			$collection = new $class($name);
 			
-			if(!class_exists($class) && is_file(COLLPATH . $name . EXT)) {
-				require COLLPATH . $name . EXT;
-			}
-			
-			if(class_exists($class)) {
-				$collection = new $class($name);
-				
-				if(!is_subclass_of($collection, self::COLLECTION_BASE_CLASS)) {
-					throw new BakedCarrotOrmException("Class $class is not subclass of " . self::COLLECTION_BASE_CLASS);
-				}
-			}
-			else {
-				$class_name = self::COLLECTION_BASE_CLASS;
-				$collection = new $class_name($name);
+			if(!is_subclass_of($collection, self::COLLECTION_BASE_CLASS)) {
+				throw new BakedCarrotOrmException("Class $class is not subclass of " . self::COLLECTION_BASE_CLASS);
 			}
 		}
 		else {
-			$collection = &self::$collections[$name];
-			$collection->reset();
+			$class_name = self::COLLECTION_BASE_CLASS;
+			$collection = new $class_name($name);
 		}
 		
 		return $collection;

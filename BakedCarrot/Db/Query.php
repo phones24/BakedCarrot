@@ -11,8 +11,8 @@
 class Query
 {
 	protected $entity_name = Orm::ENTITY_BASE_CLASS;
-	private $sql_accum = null;
-	private $values_accum = null;
+	private $sql_accum = array();
+	private $values_accum = array();
 	private $use_cache = false;
 	
 
@@ -57,7 +57,7 @@ class Query
 	// 6. if unavailable - store in internal cache
 	public function findOne()
 	{
-		$this->remove('limit')->limit(1);
+		$this->limit(1);
 		
 		$result = null;
 		$sql = $this->compile();
@@ -88,7 +88,7 @@ class Query
 	
 	public function count()
 	{
-		$this->remove('select')->select('count(*)');
+		$this->select('count(*)');
 		
 		$result = null;
 		$sql = $this->compile();
@@ -134,6 +134,7 @@ class Query
 
 	public function select($sql)
 	{
+		$this->remove('select');
 		$this->sql_accum[] = array('select', $sql, 1);
 	
 		return $this;
@@ -142,6 +143,7 @@ class Query
 	
 	public function from($sql)
 	{
+		$this->remove('from');
 		$this->sql_accum[] = array('from', $sql, 2);
 	
 		return $this;
@@ -150,6 +152,7 @@ class Query
 	
 	public function limit($limit)
 	{
+		$this->remove('limit');
 		$this->sql_accum[] = array('limit', $limit, 5);
 
 		return $this;
@@ -158,6 +161,7 @@ class Query
 	
 	public function offset($offset)
 	{
+		$this->remove('offset');
 		$this->sql_accum[] = array('offset', $offset, 6);
 
 		return $this;
@@ -166,6 +170,7 @@ class Query
 	
 	public function order($sql)
 	{
+		$this->remove('order');
 		$this->sql_accum[] = array('order', $sql, 4);
 
 		return $this;
@@ -261,7 +266,6 @@ class Query
 					
 				case 'from':
 					if(!in_array('select', $prev_stmts) && !in_array('delete', $prev_stmts)) {
-						
 						throw new BakedCarrotOrmException('Error in query: "select" statement is missing');
 					}
 					

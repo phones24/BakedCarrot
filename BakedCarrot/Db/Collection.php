@@ -82,7 +82,6 @@ class Collection extends Query
 			if(!is_subclass_of($object, Orm::ENTITY_BASE_CLASS) && get_class($object) != Orm::ENTITY_BASE_CLASS) {
 				throw new BakedCarrotOrmException("Class $class is not a subclass of " . Orm::ENTITY_BASE_CLASS);
 			}
-			
 		}
 		else {
 			$class = Orm::ENTITY_BASE_CLASS;

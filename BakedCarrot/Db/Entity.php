@@ -18,12 +18,20 @@
  */
 class Entity implements ArrayAccess
 {
+	const QUEUE_PRE_STORE = 0;
+	const QUEUE_POST_STORE = 1;
+	const QUEUE_TYPE_SET_VAL = 0;
+	const QUEUE_TYPE_EXEC = 1;
+
 	private $storage = null;
 	private $modified = false;
 	private $modified_fields = array();
 	private $collection = null;
 	private $columns_meta = null;
 	private $is_loaded = false;
+	private $job_queue = null;
+	private $field_val_queue = null;
+	private $queue = null;
 	protected $entity_name = null;
 	protected $_table = null;
 	protected $_primary_key = 'id';
@@ -48,7 +56,7 @@ class Entity implements ArrayAccess
 			$this->_table = self::createTableFromEntityName($entity_name);
 		}
 		
-		$this->storage[$this->_primary_key] = 0;
+		$this->setFieldValue($this->_primary_key, 0);
 	}
 
 
@@ -165,6 +173,21 @@ class Entity implements ArrayAccess
 	}
 	
 	
+	public function setFieldValue($key, $value)
+	{
+		if(is_null($key)) {
+			return;
+		}
+		
+		$this->modified_fields[$key] = !isset($this->storage[$key]) || $this->storage[$key] !== $value;
+		$this->storage[$key] = $value;
+		
+		if(!$this->modified && $this->modified_fields[$key]) {
+			$this->modified = true;
+		}
+	}
+	
+	
 	/**
 	 * Stores object to database
 	 *
@@ -172,28 +195,32 @@ class Entity implements ArrayAccess
 	 */
 	public function store()
 	{
+		//if(!$this->modified()) {
+		//	return;
+		//}
+		
 		$this->trigger('onBeforeStore');
 		
 		// clearing the cache
 		OrmCache::clearCacheForTable($this->_table);
 		
+		$this->runJobs(self::QUEUE_PRE_STORE);
+
 		if($this->loaded()) {
 			$this->trigger('onBeforeUpdate');
-			
 			$this->storeUpdate();
-			
 			$this->trigger('onAfterUpdate');
 		}
 		else {
 			$this->trigger('onBeforeInsert');
-
 			$this->storeInsert();
-			
 			$this->trigger('onAfterInsert');
 		}
 		
-		$this->trigger('onAfterStore');
+		$this->runJobs(self::QUEUE_POST_STORE);
 
+		$this->trigger('onAfterStore');
+		
 		$this->modified = false;
 		$this->is_loaded = true;
 		
@@ -265,8 +292,7 @@ class Entity implements ArrayAccess
 				$field = trim($field);
 				if($field) {
 					$value = isset($source[$field]) && !is_array($source[$field]) && !is_object($source[$field]) ? $source[$field] : null;
-					$this->modified_fields[$field] = !isset($this->storage[$field]) || $this->storage[$field] !== $value;
-					$this->storage[$field] = $value;
+					$this->setFieldValue($field, $value);
 				}
 			}
 		}
@@ -274,6 +300,10 @@ class Entity implements ArrayAccess
 			$imported = array_merge($this->storage, $source);
 			foreach($imported as $field => $value) {
 				$this->modified_fields[$field] = !isset($this->storage[$field]) || $this->storage[$field] !== $value;
+				
+				if(!$this->modified && $this->modified_fields[$field]) {
+					$this->modified = true;
+				}
 			}
 			$this->storage = $imported;
 		}
@@ -415,9 +445,7 @@ class Entity implements ArrayAccess
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
 		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_entity_info['table']);
 		
-		$sql = 'select count(*) from ' . $join_table . ' ' . 
-				'where ' . $base_table_key . ' = ? and ' . $associated_table_key . ' = ?';
-		
+		$sql = 'select count(*) from ' . $join_table . ' where ' . $base_table_key . ' = ? and ' . $associated_table_key . ' = ?';
 		$result = Db::getCell($sql, array($this->getId(), $object->getId()));
 		
 		return (bool)$result;
@@ -426,9 +454,13 @@ class Entity implements ArrayAccess
 	
 	public function attach(Entity $object, $foreign_key = null)
 	{
+		if($object->owns($this)) {
+			return false;
+		}
+
 		$associated_entity_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
-
+		
 		OrmCache::clearCacheForTable($associated_entity_info['table']);
 
 		Db::update($associated_entity_info['table'], array($foreign_key => $this->getId()), 'id = ?', array($object->getId()));
@@ -444,6 +476,10 @@ class Entity implements ArrayAccess
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
 		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_entity_info['table']);
 
+		if($this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
+			return false;
+		}
+		
 		$data = array($base_table_key => $this->getId(), $associated_table_key => $object->getId());
 		
 		if(is_array($join_table_fields)) {
@@ -464,6 +500,10 @@ class Entity implements ArrayAccess
 	
 	public function detach(Entity $object, $foreign_key = null)
 	{
+		if(!$this->owns($object)) {
+			return false;
+		}
+		
 		$associated_entity_info = $object->info();
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
 
@@ -500,17 +540,33 @@ class Entity implements ArrayAccess
 	}
 	
 
+	public function clearUnrelated($associated_class_name, array $related_objects, $join_table = null, $base_table_key = null, $associated_table_key = null)
+	{
+		$ids = array();
+		$associated_entity_info = Orm::entityInfo($associated_class_name);
+
+		foreach($related_objects as $object) {
+			$ids[] = $object->getId();
+		}
+		
+		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
+		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_entity_info['table']);
+		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_entity_info['table'] . '_id';
+
+		OrmCache::clearCacheForTable($join_table);
+
+		$rows = Db::getAll('select ' . $associated_table_key . ' from ' . $join_table . ' where ' . $base_table_key . ' = ?', array($this->getId()));
+		foreach($rows as $row) {
+			if(!in_array($row[$associated_table_key], $ids)) {
+				Db::delete($join_table, $associated_table_key . ' = ? and ' . $base_table_key . ' = ?', array($row[$associated_table_key], $this->getId()));
+			}
+		}
+	}
+	
+	
 	public function offsetSet($offset, $value) 
 	{
-		$this->modified = true;
-		$this->modified_fields[$offset] = !isset($this->storage[$offset]) || $this->storage[$offset] !== $value;
-		
-		if(is_null($offset)) {
-			$this->storage[] = $value;
-		} 
-		else {
-			$this->storage[$offset] = $value;
-		}
+		$this->setFieldValue($offset, $value);
 	}
 	
 	
@@ -598,78 +654,208 @@ class Entity implements ArrayAccess
 	}
 	
 	
-	public function __set($key, $val)
+	public function __set($key, $value)
 	{
-		$this->modified = true;
-		
-		$entity_name = null;
-		$entity_info = null;
-		
-		if(is_object($val) && is_a($val, Orm::ENTITY_BASE_CLASS)) {
-			$entity_info = $val->info();
-			$entity_name = $entity_info['entity'];
-		}
-			
-		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['entity'])) {
-			if(!isset($entity_info)) {
-				$entity_info = Orm::entityInfo($this->_has_one[$key]['entity']);
-			}
-			
+		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['entity']) && is_object($value) && is_a($value, Orm::ENTITY_BASE_CLASS)) {
+			$entity_info = $value->info();
+
+			// creating field name	
 			$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $this->_table . '_id';
-			$val->storage[$field] = (is_object($val) && $entity_info['entity'] == $this->_has_one[$key]['entity']) ? $this->getId() : $val;
-			$val->store();
+			
+			if($entity_info['entity'] == $this->_has_one[$key]['entity']) {
+				//only update the field if it's different from $value
+				if(!isset($value[$field]) || $value[$field] != $this->getId()) {
+					$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_SET_VAL, array(
+							'object_left' => $value, 
+							'field_left' => $field, 
+							'object_right' => $this, 
+							'field_right' => $this->_primary_key
+						));
+
+					$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_EXEC, array(
+							 'object' => $value, 
+							 'method' => 'store'
+						));
+				}
+			}
 		}
 		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['entity'])) {
-			if(!isset($entity_info)) {
-				$entity_info = Orm::entityInfo($this->_belongs_to[$key]['entity']);
+			// getting entity info
+			$entity_info = Orm::entityInfo($this->_belongs_to[$key]['entity']);
+			
+			// creating field name
+			$field = isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : $entity_info['table'] . '_id';
+			
+			// going on if the value is an object based on Entity class
+			if($entity_info['entity'] == $this->_belongs_to[$key]['entity'] && is_object($value) && is_a($value, Orm::ENTITY_BASE_CLASS)) {
+				// just setting the id if the object is already loaded
+				if($value->loaded()) {
+					$this->setFieldValue($field, $value->getId());
+				}
+				else {
+					// we got a new object - adding the job to save it and set the realtion after
+					$this->addJob(self::QUEUE_PRE_STORE, self::QUEUE_TYPE_EXEC, array(
+							 'object' => $value, 
+							 'method' => 'store'
+						));
+
+					$this->addJob(self::QUEUE_PRE_STORE, self::QUEUE_TYPE_SET_VAL, array(
+							'object_left' => $this, 
+							'field_left' => $field, 
+							'object_right' => $value, 
+							'field_right' => $entity_info['primary_key']
+						));
+				}
+			}
+			else {
+				// we got a numeric ID, just setting it
+				$this->setFieldValue($field, $value);
+			}
+		}
+		elseif(isset($this->_has_many[$key]) && isset($this->_has_many[$key]['entity'])) {
+			if(!is_array($value)) {
+				return;
 			}
 			
-			$field = isset($this->_belongs_to[$key]['foreign_key']) ? $this->_belongs_to[$key]['foreign_key'] : $entity_info['table'] . '_id';
-			$this->storage[$field] = (is_object($val) && $entity_info['entity'] == $this->_belongs_to[$key]['entity']) ? $val->getId() : $val;
-		}
-		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['entity'])) {
-			$this->clearRelations(
-					$this->_has_many_through[$key]['entity'],
-					isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
-					isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null
-				);
-			
-			if(is_array($val)) {
-				foreach($val as $num => $object) {
-					if(is_numeric($object)) {
-						$entity_info = Orm::entityInfo($this->_has_many_through[$key]['entity']);
-						$object = Orm::collection($this->_has_many_through[$key]['entity'])->create(array($entity_info['primary_key'] => $object));
-					}
-					
-					if(!is_a($object, Orm::ENTITY_BASE_CLASS)) {
-						continue;
-					}
-					
-					if(!$entity_name) {
-						$entity_info = $object->info();
-						$entity_name = $entity_info['entity'];
-					}
-			
-					if($entity_name == $this->_has_many_through[$key]['entity']) {
-						$this->attachThrough(
-								$object, 
-								isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null,
-								isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null,
-								isset($this->_has_many_through[$key]['associated_table_key']) ? $this->_has_many_through[$key]['associated_table_key'] : null,
-								isset($this->_has_many_through[$key]['join_table_fields']) ? $this->_has_many_through[$key]['join_table_fields'] : null
-							);
+			// creating field name	
+			$field = isset($this->_has_many[$key]['foreign_key']) ? $this->_has_many[$key]['foreign_key'] : $this->_table . '_id';
+		
+			foreach($value as $num => $object) {
+				// create fake object if we got array of IDs as $value
+				if(is_numeric($object)) { 
+					$entity_info = Orm::entityInfo($this->_has_many[$key]['entity']);
+					$object = Orm::collection($this->_has_many[$key]['entity'])->create(array($entity_info['primary_key'] => $object));
+				}
+				
+				if($entity_info['entity'] == $this->_has_many[$key]['entity']) {
+					//only update the field if it's different from $value
+					if(!isset($object[$field]) || $object[$field] != $this->getId()) {
+						$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_SET_VAL, array(
+								'object_left' => $object, 
+								'field_left' => $field, 
+								'object_right' => $this, 
+								'field_right' => $this->_primary_key
+							));
+
+						$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_EXEC, array(
+								 'object' => $object, 
+								 'method' => 'store'
+							));
 					}
 				}
 			}
 		}
+		elseif(isset($this->_has_many_through[$key]) && isset($this->_has_many_through[$key]['entity'])) {
+			$join_table = isset($this->_has_many_through[$key]['join_table']) ? $this->_has_many_through[$key]['join_table'] : null;
+			$base_table_key = isset($this->_has_many_through[$key]['base_table_key']) ? $this->_has_many_through[$key]['base_table_key'] : null;
+			$associated_table_key = isset($this->_has_many_through[$key]['associated_table_key']) ? $this->_has_many_through[$key]['associated_table_key'] : null;
+			$join_table_fields = isset($this->_has_many_through[$key]['join_table_fields']) ? $this->_has_many_through[$key]['join_table_fields'] : null;
+			
+			// assume we have an array of objects (or just IDs)
+			if(is_array($value)) {
+				$related_objects = array();
+				$entity_info = null;
+				
+				foreach($value as $object) {
+					// create fake object if we got array of IDs as $value
+					if(is_numeric($object)) { 
+						$entity_info = Orm::entityInfo($this->_has_many_through[$key]['entity']);
+						$object = Orm::collection($this->_has_many_through[$key]['entity'])->create(array($entity_info['primary_key'] => $object));
+					}
+					
+					// can't go on if it's not an Entity
+					if(!is_a($object, Orm::ENTITY_BASE_CLASS)) {
+						continue;
+					}
+					
+					// getting entity info
+					if(!$entity_info) { 
+						$entity_info = $object->info();
+					}
+				
+					// and finally, if entity name is the same as defined in class, setting the relation
+					if($entity_info['entity'] == $this->_has_many_through[$key]['entity']) {
+						$this->addJob(self::QUEUE_PRE_STORE, self::QUEUE_TYPE_EXEC, array(
+								'object' => $this, 
+								'method' => 'attachThrough',
+								'params' => array(
+										$object, 
+										$join_table,
+										$base_table_key,
+										$associated_table_key,
+										$join_table_fields
+									)
+							));
+							
+						$related_objects[] = $object;
+					}
+				}
+				
+				// removing old relations
+				$this->addJob(self::QUEUE_PRE_STORE, self::QUEUE_TYPE_EXEC, array(
+						'object' => $this, 
+						'method' => 'clearUnrelated',
+						'params' => array(
+								$this->_has_many_through[$key]['entity'],
+								$related_objects,
+								$join_table,
+								$base_table_key,
+								$associated_table_key
+							)
+					));			
+			}
+			elseif(empty($value)) {
+				// clear all relationships
+				$this->addJob(self::QUEUE_PRE_STORE, self::QUEUE_TYPE_EXEC, array(
+						'object' => $this, 
+						'method' => 'clearRelations',
+						'params' => array(
+								$this->_has_many_through[$key]['entity'],
+								$join_table,
+								$base_table_key
+							)
+					));			
+			}
+		}
 		else {
-			$this->modified_fields[$key] = !isset($this->storage[$key]) || $this->storage[$key] !== $val;
-			$this->storage[$key] = $val;
+			$this->setFieldValue($key, $value);
 		}
 	}
 	
 
-	public static function createJoinTable($table1, $table2)
+	private function addJob($queue, $type, $params)
+	{
+		$this->queue[$queue][$type][] = $params;
+	}
+
+
+	private function runJobs($queue)
+	{
+		if(isset($this->queue[$queue]) && is_array($this->queue[$queue])) {
+			foreach($this->queue[$queue] as $job_type => $jobs) {
+				foreach($jobs as $job) {
+					if($job_type == self::QUEUE_TYPE_SET_VAL) {
+						$object_left = $job['object_left'];
+						$object_right = $job['object_right'];
+						$object_left->setFieldValue($job['field_left'], $object_right[$job['field_right']]);
+					}
+					elseif($job_type == self::QUEUE_TYPE_EXEC) {
+						if(method_exists($job['object'], $job['method'])) {
+							call_user_func_array(array($job['object'], $job['method']), isset($job['params']) ? $job['params'] : array());
+						}
+						else {
+							throw new BakedCarrotOrmException('Entity job error: cannot execute method "' . $job['method'] . '" of object "' . get_class($job['object']) . '"');
+						}
+					}
+				}
+			}
+			
+			$this->queue[$queue] = array();
+		}
+	}	
+
+
+	private static function createJoinTable($table1, $table2)
 	{
 		$tables = array($table1, $table2);
 		sort($tables);
@@ -678,7 +864,7 @@ class Entity implements ArrayAccess
 	}
 
 
-	public static function createTableFromEntityName($entity_name)
+	private static function createTableFromEntityName($entity_name)
 	{
 		return strtolower(preg_replace("/([a-z])([A-Z])/", "\\1_\\2", $entity_name));
 	}
