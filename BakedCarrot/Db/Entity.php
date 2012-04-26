@@ -29,8 +29,6 @@ class Entity implements ArrayAccess
 	private $collection = null;
 	private $columns_meta = null;
 	private $is_loaded = false;
-	private $job_queue = null;
-	private $field_val_queue = null;
 	private $queue = null;
 	protected $entity_name = null;
 	protected $_table = null;
@@ -387,7 +385,7 @@ class Entity implements ArrayAccess
 		}
 			
 		$query->
-			from($join_table . ', ' . $associated_entity_info['table'])->
+			table($join_table . ', ' . $associated_entity_info['table'])->
 			where($associated_entity_info['table'] . '.' . $associated_entity_info['primary_key'] . ' = ' . $join_table . '.' . $associated_table_key . ' and ' . 
 				$join_table . '.' . $base_table_key . ' = ?', array($this->getId()));
 
@@ -775,7 +773,7 @@ class Entity implements ArrayAccess
 				
 					// and finally, if entity name is the same as defined in class, setting the relation
 					if($entity_info['entity'] == $this->_has_many_through[$key]['entity']) {
-						$this->addJob(self::QUEUE_PRE_STORE, self::QUEUE_TYPE_EXEC, array(
+						$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_EXEC, array(
 								'object' => $this, 
 								'method' => 'attachThrough',
 								'params' => array(
@@ -792,7 +790,7 @@ class Entity implements ArrayAccess
 				}
 				
 				// removing old relations
-				$this->addJob(self::QUEUE_PRE_STORE, self::QUEUE_TYPE_EXEC, array(
+				$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_EXEC, array(
 						'object' => $this, 
 						'method' => 'clearUnrelated',
 						'params' => array(
