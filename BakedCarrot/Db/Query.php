@@ -27,7 +27,13 @@ class Query
 	public function findAll()
 	{
 		$result = array();
+		
+		if(!$this->hasStatement('select')) {
+			$this->select('*');
+		}
+		
 		$sql = $this->compile();
+		
 		$cache_key = OrmCache::genkey($sql, $this->values_accum);
 		
 		if(($result_cached = OrmCache::getCachedQuery($cache_key)) !== false && $this->use_cache) {
@@ -57,6 +63,10 @@ class Query
 	// 6. if unavailable - store in internal cache
 	public function findOne()
 	{
+		if(!$this->hasStatement('select')) {
+			$this->select('*');
+		}
+		
 		$this->limit(1);
 		
 		$result = null;
@@ -76,11 +86,11 @@ class Query
 		}
 		
 		if($this->use_cache) {
-			OrmCache::cacheQuery($cache_key, $this->getStatement('from'), $result);
+			OrmCache::cacheQuery($cache_key, $this->getStatement('table'), $result);
 			return $result;
 		}
 		
-		OrmCache::storeInternal($cache_key, $this->getStatement('from'), $result);
+		OrmCache::storeInternal($cache_key, $this->getStatement('table'), $result);
 		
 		return $result;
 	}
@@ -105,16 +115,41 @@ class Query
 		$result = Db::getCell($this->compile(), $this->values_accum);
 		
 		if($this->use_cache) {
-			OrmCache::cacheQuery($cache_key, $this->getStatement('from'), $result);
+			OrmCache::cacheQuery($cache_key, $this->getStatement('table'), $result);
 			return $result;
 		}
 		
-		OrmCache::storeInternal($cache_key, $this->getStatement('from'), $result);
+		OrmCache::storeInternal($cache_key, $this->getStatement('table'), $result);
 
 		return $result;
 	}
 
 
+	public function delete()
+	{
+		$this->remove('select');
+		$this->sql_accum[] = array('delete', null, 1);
+		$sql = $this->compile();
+		
+		OrmCache::clearCacheForTable($this->getStatement('table'));
+		
+		return Db::exec($sql, $this->values_accum);
+	}
+
+	
+	public function update(array $field_values)
+	{
+		$this->remove('select');
+		$this->sql_accum[] = array('update', array_keys($field_values), 1);
+		$this->values_accum = array_merge(array_values($field_values), (array)$this->values_accum);
+		$sql = $this->compile();
+		
+		OrmCache::clearCacheForTable($this->getStatement('table'));
+	
+		return Db::exec($sql, $this->values_accum);
+	}
+
+	
 	public function setEntity($class_name)
 	{
 		$this->entity_name = $class_name;
@@ -141,10 +176,10 @@ class Query
 	}
 
 	
-	public function from($sql)
+	public function table($sql)
 	{
-		$this->remove('from');
-		$this->sql_accum[] = array('from', $sql, 2);
+		$this->remove('table');
+		$this->sql_accum[] = array('table', $sql, 2);
 	
 		return $this;
 	}
@@ -264,17 +299,36 @@ class Query
 					$sql = $statement . ' ' . $param . ' ';
 					break;
 					
-				case 'from':
-					if(!in_array('select', $prev_stmts) && !in_array('delete', $prev_stmts)) {
-						throw new BakedCarrotOrmException('Error in query: "select" statement is missing');
+				case 'delete':
+					$sql = $statement . ' ';
+					break;
+					
+				case 'update':
+					$tbl = $this->getStatement('table');
+					if(!$tbl) {
+						throw new BakedCarrotOrmException('Error in query: table name is missing in update query');
 					}
 					
-					$sql .= $statement . ' ' . $param . ' ';
+					$sql = $statement . ' ' . $tbl . ' set ';
+					$sql .= implode(' = ?, ', $param);
+					$sql .= ' = ? ';
+					break;
+					
+				case 'table':
+					if(in_array('update', $prev_stmts)) {
+						break;
+					} 
+					
+					if(!in_array('select', $prev_stmts) && !in_array('delete', $prev_stmts)) {
+						throw new BakedCarrotOrmException('Error in query: "select", "update" or "delete" statement is missing');
+					}
+					
+					$sql .= 'from ' . $param . ' ';
 					break;
 					
 				case 'where':
-					if(!in_array('from', $prev_stmts)) {
-						throw new BakedCarrotOrmException('Error in query: "from" statement is missing');
+					if(!in_array('table', $prev_stmts)) {
+						throw new BakedCarrotOrmException('Error in query: table name is missing');
 					}
 					
 					if(in_array('where', $prev_stmts)) { // if WHERE already exists, add AND
@@ -287,24 +341,24 @@ class Query
 					break;
 					
 				case 'limit':
-					if(!in_array('from', $prev_stmts)) {
-						throw new BakedCarrotOrmException('Error in query: "from" statement is missing');
+					if(!in_array('table', $prev_stmts)) {
+						throw new BakedCarrotOrmException('Error in query: table name is missing');
 					}
 					
 					$sql .= $statement . ' ' . $param . ' ';
 					break;
 					
 				case 'offset':
-					if(!in_array('from', $prev_stmts)) {
-						throw new BakedCarrotOrmException('Error in query: "from" statement is missing');
+					if(!in_array('table', $prev_stmts)) {
+						throw new BakedCarrotOrmException('Error in query: table name is missing');
 					}
 					
 					$sql .= $statement . ' ' . $param . ' ';
 					break;
 
 				case 'order':
-					if(!in_array('from', $prev_stmts)) {
-						throw new BakedCarrotOrmException('Error in query: "from" statement is missing');
+					if(!in_array('table', $prev_stmts)) {
+						throw new BakedCarrotOrmException('Error in query: table name is missing');
 					}
 					
 					$sql .= $statement . ' by ' . $param . ' ';

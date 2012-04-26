@@ -38,11 +38,8 @@ class Collection extends Query
 	public function reset()
 	{	
 		parent::reset();
-		
-		// default query
-		$this->select('*')->from($this->entity_info['table']);
-		
-		return $this;
+
+		return $this->table($this->entity_info['table']);
 	}
 	
 	
