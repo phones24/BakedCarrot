@@ -48,7 +48,7 @@ class Query
 		}
 		
 		if($this->use_cache) {
-			OrmCache::cacheQuery($cache_key, $this->getStatement('from'), $result);
+			OrmCache::cacheQuery($cache_key, $this->getStatement('table'), $result);
 		}
 		
 		return $result;
