@@ -328,6 +328,9 @@ class App
 				
 		}
 		elseif(Request::isAjax() || Request::isFlash()) {
+			if(!headers_sent()) {
+				header('HTTP/1.1 500 Internal Server Error');
+			}
 			print 'EXCEPTION (' . get_class($e) . '): ' . $e->getMessage();
 		}
 		else {

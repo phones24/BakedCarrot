@@ -107,13 +107,13 @@ class Request
 
 	public static function isAjax()
 	{
-		return isset($_SERVER['X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+		return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 	}
 	
 	
 	public static function isFlash()
 	{
-		return isset($_SERVER['X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'Shockwave Flash';
+		return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'Shockwave Flash';
 	}
 	
 	
@@ -192,22 +192,6 @@ class Request
 	}
 	
 	
-	private static function loadHeaders()
-	{
-		foreach($_SERVER as $key => $val) {
-			if(strpos($key, 'HTTP_') === 0) {
-				$key = str_replace('HTTP_', '', $key);
-				$key = str_replace('_', ' ', $key);
-				$key = strtolower($key);
-				$key = ucwords($key);
-				$key = str_replace(' ', '-', $key);
-				
-				self::$headers[$key] = $val;
-			}
-		}
-	}
-	
-	
 	public static function headers($key = null)
 	{
 		if(empty(self::$headers)) {
@@ -269,6 +253,22 @@ class Request
 		}
 		else {
 			return stripslashes($data);
+		}
+	}
+
+
+	private static function loadHeaders()
+	{
+		foreach($_SERVER as $key => $val) {
+			if(strpos($key, 'HTTP_') === 0) {
+				$key = str_replace('HTTP_', '', $key);
+				$key = str_replace('_', ' ', $key);
+				$key = strtolower($key);
+				$key = ucwords($key);
+				$key = str_replace(' ', '-', $key);
+				
+				self::$headers[$key] = $val;
+			}
 		}
 	}
 }	
