@@ -37,11 +37,18 @@ class OrmCache
 		if(!self::$cache_driver) {
 			return false;
 		}
+		
+		$table = trim($table);
+		
+		if(!$table) {
+			throw new BakedCarrotOrmException('Cannot cache query without table name. Cache key: ' . $key);
+		}
 	
 		self::$cache_driver->set($key, $data);
 		
 		// store the keys for table
 		$tables = explode(',', $table);
+
 		foreach($tables as $table) {
 			$table_key = self::KEYS_PREFIX . strtolower(trim($table));
 			$keys = self::$cache_driver->get($table_key);

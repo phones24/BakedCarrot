@@ -193,10 +193,6 @@ class Entity implements ArrayAccess
 	 */
 	public function store()
 	{
-		//if(!$this->modified()) {
-		//	return;
-		//}
-		
 		$this->trigger('onBeforeStore');
 		
 		// clearing the cache
