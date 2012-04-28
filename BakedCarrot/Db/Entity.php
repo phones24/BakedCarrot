@@ -186,6 +186,13 @@ class Entity implements ArrayAccess
 	}
 	
 	
+	public function fieldExists($field) 
+	{
+		return array_key_exists($field, $this->storage);
+	}
+	
+
+	
 	/**
 	 * Stores object to database
 	 *
@@ -285,7 +292,7 @@ class Entity implements ArrayAccess
 			foreach($fields as $field) {
 				$field = trim($field);
 				if($field) {
-					$value = isset($source[$field]) && !is_array($source[$field]) && !is_object($source[$field]) ? $source[$field] : null;
+					$value = array_key_exists($field, $source) && !is_array($source[$field]) && !is_object($source[$field]) ? $source[$field] : null;
 					$this->setFieldValue($field, $value);
 				}
 			}
@@ -293,7 +300,7 @@ class Entity implements ArrayAccess
 		else {
 			$imported = array_merge($this->storage, $source);
 			foreach($imported as $field => $value) {
-				$this->modified_fields[$field] = !isset($this->storage[$field]) || $this->storage[$field] !== $value;
+				$this->modified_fields[$field] = !array_key_exists($field, $this->storage) || $this->storage[$field] !== $value;
 				
 				if(!$this->modified && $this->modified_fields[$field]) {
 					$this->modified = true;
@@ -367,25 +374,24 @@ class Entity implements ArrayAccess
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
 		$associated_table_key = $associated_table_key ? $associated_table_key : $associated_entity_info['table'] . '_id';
 		
-		$query = new Query($associated_class_name);
+		$collection = Orm::collection($associated_class_name);
 	
 		if(is_array($join_table_fields)) {
 			foreach($join_table_fields as &$field) {
 				$field = $join_table . '.' . $field . ' as ' . $field;
 			}
 			
-			$query->select($associated_entity_info['table'] . '.*, ' . implode(', ', $join_table_fields));
+			$collection->select($associated_entity_info['table'] . '.*, ' . implode(', ', $join_table_fields));
 		}
 		else {
-			$query->select($associated_entity_info['table'] . '.*');
+			$collection->select($associated_entity_info['table'] . '.*');
 		}
 			
-		$query->
-			table($join_table . ', ' . $associated_entity_info['table'])->
+		$collection->table($join_table . ', ' . $associated_entity_info['table'])->
 			where($associated_entity_info['table'] . '.' . $associated_entity_info['primary_key'] . ' = ' . $join_table . '.' . $associated_table_key . ' and ' . 
 				$join_table . '.' . $base_table_key . ' = ?', array($this->getId()));
 
-		return $query;
+		return $collection;
 	}
 	
 
@@ -470,18 +476,28 @@ class Entity implements ArrayAccess
 		$base_table_key = $base_table_key ? $base_table_key : $this->_table . '_id';
 		$join_table = $join_table ? $join_table : self::createJoinTable($this->_table, $associated_entity_info['table']);
 
-		if($this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
-			return false;
-		}
-		
+		// construct data to insert (or update)
 		$data = array($base_table_key => $this->getId(), $associated_table_key => $object->getId());
-		
 		if(is_array($join_table_fields)) {
 			foreach($join_table_fields as $field) {
-				if(isset($object[$field])) {
+				if($object->fieldExists($field)) {
 					$data = array_merge($data, array($field => $object[$field]));
 				}
 			}
+		}
+		
+		if($this->ownsThrough($object, $join_table, $base_table_key, $associated_table_key)) {
+			// update, if join table fields exists
+			if(!empty($join_table_fields)) {
+				Db::update(
+						$join_table, 
+						$data, 
+						$associated_table_key . ' = ? and ' . $base_table_key . ' = ?', 
+						array($object->getId(), $this->getId())
+					);
+			}
+			
+			return false;
 		}
 		
 		OrmCache::clearCacheForTable($join_table);
@@ -643,7 +659,7 @@ class Entity implements ArrayAccess
 			return $result;
 		}
 		else {
-			return isset($this->storage[$key]) ? $this->storage[$key] : null;
+			return $this->fieldExists($key) ? $this->storage[$key] : null;
 		}
 	}
 	
@@ -658,7 +674,7 @@ class Entity implements ArrayAccess
 			
 			if($entity_info['entity'] == $this->_has_one[$key]['entity']) {
 				//only update the field if it's different from $value
-				if(!isset($value[$field]) || $value[$field] != $this->getId()) {
+				if(!$value->fieldExists($field) || $value[$field] != $this->getId()) {
 					$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_SET_VAL, array(
 							'object_left' => $value, 
 							'field_left' => $field, 
