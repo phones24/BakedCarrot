@@ -691,3 +691,17 @@ ow new BakedCarrotNotFoundException($message);
 	}
 }
 
+
+	/**
+	 * Throws special exception that sends 500 error to client
+	 *
+	 * @param string $message message to client
+	 * @return void
+	 * @static
+	 */
+	public static function error($message = null)
+	{
+		throw new BakedCarrotException($message);
+	}
+}
+

@@ -33,8 +33,8 @@ class Query
 		}
 		
 		$sql = $this->compile();
-		
-		$cache_key = OrmCache::genkey($sql, $this->values_accum);
+		$tbl = $this->getStatement('table');
+		$cache_key = OrmCache::genKey($sql, $this->values_accum);
 		
 		if(($result_cached = OrmCache::getCachedQuery($cache_key)) !== false && $this->use_cache) {
 			return $result_cached;
@@ -48,7 +48,7 @@ class Query
 		}
 		
 		if($this->use_cache) {
-			OrmCache::cacheQuery($cache_key, $this->getStatement('table'), $result);
+			OrmCache::cacheQuery($cache_key, $tbl['sql'], $result);
 		}
 		
 		return $result;
@@ -71,7 +71,8 @@ class Query
 		
 		$result = null;
 		$sql = $this->compile();
-		$cache_key = OrmCache::genkey($sql, $this->values_accum);
+		$tbl = $this->getStatement('table');
+		$cache_key = OrmCache::genKey($sql, $this->values_accum);
 		
 		if(($result_cached = OrmCache::getCachedQuery($cache_key)) !== false && $this->use_cache) {
 			return $result_cached;
@@ -86,11 +87,11 @@ class Query
 		}
 		
 		if($this->use_cache) {
-			OrmCache::cacheQuery($cache_key, $this->getStatement('table'), $result);
+			OrmCache::cacheQuery($cache_key, $tbl['sql'], $result);
 			return $result;
 		}
 		
-		OrmCache::storeInternal($cache_key, $this->getStatement('table'), $result);
+		OrmCache::storeInternal($cache_key, $tbl['sql'], $result);
 		
 		return $result;
 	}
@@ -102,7 +103,8 @@ class Query
 		
 		$result = null;
 		$sql = $this->compile();
-		$cache_key = OrmCache::genkey($sql, $this->values_accum);
+		$tbl = $this->getStatement('table');
+		$cache_key = OrmCache::genKey($sql, $this->values_accum);
 		
 		if(($result_cached = OrmCache::getCachedQuery($cache_key)) !== false && $this->use_cache) {
 			return $result_cached;
@@ -115,11 +117,11 @@ class Query
 		$result = Db::getCell($this->compile(), $this->values_accum);
 		
 		if($this->use_cache) {
-			OrmCache::cacheQuery($cache_key, $this->getStatement('table'), $result);
+			OrmCache::cacheQuery($cache_key, $tbl['sql'], $result);
 			return $result;
 		}
 		
-		OrmCache::storeInternal($cache_key, $this->getStatement('table'), $result);
+		OrmCache::storeInternal($cache_key, $tbl['sql'], $result);
 
 		return $result;
 	}
@@ -128,10 +130,17 @@ class Query
 	public function delete()
 	{
 		$this->remove('select');
-		$this->sql_accum[] = array('delete', null, 1);
+		$this->sql_accum[] = array(
+				'stmt'	=> 'delete', 
+				'sql'	=> null, 
+				'sort'	=> 1,
+				'val'	=> array()
+			);
+				
 		$sql = $this->compile();
-		
-		OrmCache::clearCacheForTable($this->getStatement('table'));
+		$tbl = $this->getStatement('table');
+
+		OrmCache::clearCacheForTable($tbl['sql']);
 		
 		return Db::exec($sql, $this->values_accum);
 	}
@@ -140,11 +149,17 @@ class Query
 	public function update(array $field_values)
 	{
 		$this->remove('select');
-		$this->sql_accum[] = array('update', array_keys($field_values), 1);
-		$this->values_accum = array_merge(array_values($field_values), (array)$this->values_accum);
+		$this->sql_accum[] = array(
+				'stmt'	=> 'update', 
+				'sql'	=> null, 
+				'sort'	=> 1,
+				'val'	=> $field_values
+			);
+			
 		$sql = $this->compile();
+		$tbl = $this->getStatement('table');
 		
-		OrmCache::clearCacheForTable($this->getStatement('table'));
+		OrmCache::clearCacheForTable($tbl['sql']);
 	
 		return Db::exec($sql, $this->values_accum);
 	}
@@ -160,8 +175,12 @@ class Query
 	
 	public function where($sql, $values = array())
 	{
-		$this->sql_accum[] = array('where', $sql, 3);
-		$this->values_accum = array_merge((array)$this->values_accum, $values);
+		$this->sql_accum[] = array(
+				'stmt'	=> 'where', 
+				'sql'	=> $sql, 
+				'sort'	=> 3,
+				'val'	=> $values
+			);
 		
 		return $this;
 	}
@@ -170,7 +189,12 @@ class Query
 	public function select($sql)
 	{
 		$this->remove('select');
-		$this->sql_accum[] = array('select', $sql, 1);
+		$this->sql_accum[] = array(
+				'stmt'	=> 'select', 
+				'sql'	=> $sql, 
+				'sort'	=> 1,
+				'val'	=> array()
+			);
 	
 		return $this;
 	}
@@ -179,7 +203,12 @@ class Query
 	public function table($sql)
 	{
 		$this->remove('table');
-		$this->sql_accum[] = array('table', $sql, 2);
+		$this->sql_accum[] = array(
+				'stmt'	=> 'table', 
+				'sql'	=> $sql, 
+				'sort'	=> 2,
+				'val'	=> array()
+			);
 	
 		return $this;
 	}
@@ -188,7 +217,12 @@ class Query
 	public function limit($limit)
 	{
 		$this->remove('limit');
-		$this->sql_accum[] = array('limit', $limit, 5);
+		$this->sql_accum[] = array(
+				'stmt'	=> 'limit', 
+				'sql'	=> $limit, 
+				'sort'	=> 5,
+				'val'	=> array()
+			);
 
 		return $this;
 	}
@@ -197,7 +231,12 @@ class Query
 	public function offset($offset)
 	{
 		$this->remove('offset');
-		$this->sql_accum[] = array('offset', $offset, 6);
+		$this->sql_accum[] = array(
+				'stmt'	=> 'offset', 
+				'sql'	=> $offset, 
+				'sort'	=> 6,
+				'val'	=> null
+			);
 
 		return $this;
 	}
@@ -206,7 +245,12 @@ class Query
 	public function order($sql)
 	{
 		$this->remove('order');
-		$this->sql_accum[] = array('order', $sql, 4);
+		$this->sql_accum[] = array(
+				'stmt'	=> 'order', 
+				'sql'	=> $sql, 
+				'sort'	=> 4,
+				'val'	=> null
+			);
 
 		return $this;
 	}
@@ -224,7 +268,7 @@ class Query
 	public function remove($stmt)
 	{
 		foreach($this->sql_accum as $num => $options) {
-			if($options[0] == $stmt) {
+			if($options['stmt'] == $stmt) {
 				unset($this->sql_accum[$num]);
 			}
 		}
@@ -236,7 +280,6 @@ class Query
 	public function reset()
 	{
 		$this->sql_accum = array();
-		$this->values_accum = array();
 
 		return $this;
 	}
@@ -253,7 +296,7 @@ class Query
 	public function hasStatement($stmt)
 	{
 		foreach($this->sql_accum as $num => $options) {
-			if($options[0] == $stmt) {
+			if($options['stmt'] == $stmt) {
 				return true;
 			}
 		}
@@ -265,8 +308,8 @@ class Query
 	public function getStatement($stmt)
 	{
 		foreach($this->sql_accum as $num => $options) {
-			if($options[0] == $stmt) {
-				return $options[1];
+			if($options['stmt'] == $stmt) {
+				return $options;
 			}
 		}
 		
@@ -276,11 +319,11 @@ class Query
 	
 	private static function cmpFunction($a, $b)
 	{
-		if($a[2] == $b[2]) {
+		if($a['sort'] == $b['sort']) {
 			return 0;
 		}
 		
-		return ($a[2] > $b[2]) ? 1 : -1;
+		return ($a['sort'] > $b['sort']) ? 1 : -1;
 	}
 	
 	
@@ -288,11 +331,14 @@ class Query
 	{
 		$sql = '';
 		$prev_stmts = array();
+		$this->values_accum = array();
 		
 		usort($this->sql_accum, array($this, 'cmpFunction'));
 		
 		foreach($this->sql_accum as $options) {
-			list($statement, $param) = $options;
+			$statement = $options['stmt'];
+			$param = $options['sql'];
+			$values = $options['val'];
 
 			switch($statement) {
 				case 'select':
@@ -309,9 +355,11 @@ class Query
 						throw new BakedCarrotOrmException('Error in query: table name is missing in update query');
 					}
 					
-					$sql = $statement . ' ' . $tbl . ' set ';
+					$sql = $statement . ' ' . $tbl['sql'] . ' set ';
 					$sql .= implode(' = ?, ', $param);
 					$sql .= ' = ? ';
+					$this->values_accum = array_merge($this->values_accum, $values);
+					
 					break;
 					
 				case 'table':
@@ -338,6 +386,8 @@ class Query
 						$sql .= $statement . ' ' . $param . ' ';
 					}
 					
+					$this->values_accum = array_merge($this->values_accum, $values);
+					
 					break;
 					
 				case 'limit':
@@ -346,6 +396,7 @@ class Query
 					}
 					
 					$sql .= $statement . ' ' . $param . ' ';
+
 					break;
 					
 				case 'offset':
@@ -354,6 +405,7 @@ class Query
 					}
 					
 					$sql .= $statement . ' ' . $param . ' ';
+					
 					break;
 
 				case 'order':
@@ -362,6 +414,7 @@ class Query
 					}
 					
 					$sql .= $statement . ' by ' . $param . ' ';
+
 					break;
 
 				default:
