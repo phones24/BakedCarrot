@@ -687,3 +687,7 @@ class App
 	}
 }
 
+ow new BakedCarrotNotFoundException($message);
+	}
+}
+
