@@ -371,7 +371,7 @@ class Entity implements ArrayAccess
 	
 		if(is_array($join_table_fields)) {
 			foreach($join_table_fields as &$field) {
-				$field = $join_table . '.' . $field . ' as ' . Orm::JOIN_TABLE_FIELD_PREFIX . $field;
+				$field = $join_table . '.' . $field . ' as ' . $field;
 			}
 			
 			$query->select($associated_entity_info['table'] . '.*, ' . implode(', ', $join_table_fields));
@@ -478,8 +478,8 @@ class Entity implements ArrayAccess
 		
 		if(is_array($join_table_fields)) {
 			foreach($join_table_fields as $field) {
-				if(isset($object[Orm::JOIN_TABLE_FIELD_PREFIX . $field])) {
-					$data = array_merge($data, array($field => $object[Orm::JOIN_TABLE_FIELD_PREFIX . $field]));
+				if(isset($object[$field])) {
+					$data = array_merge($data, array($field => $object[$field]));
 				}
 			}
 		}

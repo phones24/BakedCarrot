@@ -10,7 +10,6 @@ class Orm
 	const ENTITY_BASE_CLASS = 'Entity';
 	const COLLECTION_CLASS_PREFIX = 'Collection';
 	const COLLECTION_BASE_CLASS = 'Collection';
-	const JOIN_TABLE_FIELD_PREFIX = '__';
 	
 	private static $entity_info = array();
 
