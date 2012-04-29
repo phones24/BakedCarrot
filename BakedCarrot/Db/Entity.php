@@ -270,6 +270,11 @@ class Entity implements ArrayAccess
 				continue;
 			}
 			
+			// do not insert if column is null, has default value and NOT NULL
+			if($real_field[$field_name]['Null'] == 'NO' && $field_val === null && $real_field[$field_name]['Default'] != null) {
+				continue;
+			}
+			
 			$values[$field_name] = $field_val;
 		}
 		
@@ -292,7 +297,7 @@ class Entity implements ArrayAccess
 			foreach($fields as $field) {
 				$field = trim($field);
 				if($field) {
-					$value = array_key_exists($field, $source) && !is_array($source[$field]) && !is_object($source[$field]) ? $source[$field] : null;
+					$value = isset($source[$field]) && !is_array($source[$field]) && !is_object($source[$field]) ? $source[$field] : null;
 					$this->setFieldValue($field, $value);
 				}
 			}
@@ -300,7 +305,7 @@ class Entity implements ArrayAccess
 		else {
 			$imported = array_merge($this->storage, $source);
 			foreach($imported as $field => $value) {
-				$this->modified_fields[$field] = !array_key_exists($field, $this->storage) || $this->storage[$field] !== $value;
+				$this->modified_fields[$field] = !isset($this->storage[$field]) || $this->storage[$field] !== $value;
 				
 				if(!$this->modified && $this->modified_fields[$field]) {
 					$this->modified = true;
