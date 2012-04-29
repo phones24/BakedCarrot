@@ -327,37 +327,45 @@ class App
 				$e->getTraceAsString() . "\n";
 				
 		}
-		elseif(Request::isAjax() || Request::isFlash()) {
-			if(!headers_sent()) {
-				header('HTTP/1.1 500 Internal Server Error');
-			}
-			print 'EXCEPTION (' . get_class($e) . '): ' . $e->getMessage();
-		}
 		else {
 			if($e instanceOf BakedCarrotNotFoundException) {
 				if(!headers_sent()) {
 					header('HTTP/1.0 404 Not Found');
 				}
-					
-				print '<html><head></head><body style="font: 10pt arial; margin: 40px;">' .
-					'<h1 style="font-weight: normal; font-size: 30px;">404 Page Not Found</h1>' . 
-					($e->getMessage() ? '<h3 style="margin: 0; font-weight: normal;">Message: ' . $e->getMessage() . '</h3>' : '') .
-					(self::isDevMode() ? '<p>' . nl2br($e->getTraceAsString()) . '</p>' : '') .
-					'</body>';
+				
+				if(Request::isAjax() || Request::isFlash()) {
+					print $e->getMessage();
+				}
+				else {
+					print '<html><head></head><body style="font: 10pt arial; margin: 40px;">' .
+						'<h1 style="font-weight: normal; font-size: 30px;">404 Page Not Found</h1>' . 
+						($e->getMessage() ? '<h3 style="margin: 0; font-weight: normal;">Message: ' . $e->getMessage() . '</h3>' : '') .
+						(self::isDevMode() ? '<p>' . nl2br($e->getTraceAsString()) . '</p>' : '') .
+						'</body>';
+				}
 			}
 			else {
 				if(!headers_sent()) {
 					header('HTTP/1.1 500 Internal Server Error');
 				}
 				
-				print '<html><head></head><body style="font: 10pt arial; margin: 40px;">' .
-					'<h1 style="font-weight: normal; font-size: 30px;">' . get_class($e) . ' occured</h1>' . 
-					'<h3 style="margin: 0; font-weight: normal;">Message: ' . $e->getMessage() . '</h3>' .
-					'<h3 style="margin: 0; font-weight: normal;">Code: ' . $e->getCode() . '</h3>' .
-					(self::isDevMode() && get_class($e) == 'PDOException' ? '<h3 style="margin: 0;">SQL: ' . Db::lastSql() . '</h3>' : '') .
-					(self::isDevMode() ? '<p>' . nl2br($e->getTraceAsString()) . '</p>' : '') .
-					'<h4 style="font-weight: normal;"><em>Baked Carrot ver ' . BAKEDCARROT_VERSION . '</em></h4>' .
-					'</body>';
+				if(Request::isAjax() || Request::isFlash()) {
+					print 'EXCEPTION (' . get_class($e) . '): ' . $e->getMessage() . "\n";
+					
+					if(self::isDevMode() && get_class($e) == 'PDOException') {
+						print 'SQL: ' . Db::lastSql();
+					}
+				}
+				else {
+					print '<html><head></head><body style="font: 10pt arial; margin: 40px;">' .
+						'<h1 style="font-weight: normal; font-size: 30px;">' . get_class($e) . ' occured</h1>' . 
+						'<h3 style="margin: 0; font-weight: normal;">Message: ' . $e->getMessage() . '</h3>' .
+						'<h3 style="margin: 0; font-weight: normal;">Code: ' . $e->getCode() . '</h3>' .
+						(self::isDevMode() && get_class($e) == 'PDOException' ? '<h3 style="margin: 0;">SQL: ' . Db::lastSql() . '</h3>' : '') .
+						(self::isDevMode() ? '<p>' . nl2br($e->getTraceAsString()) . '</p>' : '') .
+						'<h4 style="font-weight: normal;"><em>Baked Carrot ver ' . BAKEDCARROT_VERSION . '</em></h4>' .
+						'</body>';
+				}
 			}
 		}
 		
@@ -685,15 +693,10 @@ class App
 	{
 		throw new BakedCarrotNotFoundException($message);
 	}
-}
-
-ow new BakedCarrotNotFoundException($message);
-	}
-}
-
-
+	
+	
 	/**
-	 * Throws special exception that sends 500 error to client
+	 * Throws exception that sends 500 error to client
 	 *
 	 * @param string $message message to client
 	 * @return void
@@ -701,7 +704,7 @@ ow new BakedCarrotNotFoundException($message);
 	 */
 	public static function error($message = null)
 	{
-		throw new BakedCarrotException($message);
+		throw new BakedCarrotException((string)$message);
 	}
 }
 
