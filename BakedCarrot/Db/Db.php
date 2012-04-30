@@ -204,3 +204,57 @@ class Db
 	}
 }
 
+ql, array $values = null)
+	{
+		self::connect();
+
+		$sth = self::$pdo->prepare($sql);
+		$sth->execute($values);
+		
+		return $sth->fetch();
+	}
+	
+	
+	public static function &getAll($sql, array $values = null)
+	{
+		self::connect();
+
+		$result = array();
+		$sth = self::$pdo->prepare($sql);
+		$sth->execute($values);
+		
+		while($row = $sth->fetch()) {
+			$result[] = $row;
+		}
+		
+		return $result;
+	}
+	
+	
+	public static function exec($sql, array $values = null)
+	{
+		self::connect();
+
+		$sth = self::$pdo->prepare($sql);
+		$sth->execute($values);
+		
+		return $sth->rowCount();
+	}
+
+	
+	public static function now()
+	{
+		return strftime("%Y-%m-%d %H:%M:%S"); 
+	}
+	
+	
+	public static function lastSql()
+	{
+		if(!self::$pdo) {
+			return null;
+		}
+
+		return self::$pdo->lastSql();
+	}
+}
+

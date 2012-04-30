@@ -237,16 +237,15 @@ class Entity implements ArrayAccess
 	private function storeUpdate()
 	{
 		$values = array();
-		$real_field = Db::getColumns($this->_table);
 
 		foreach($this->storage as $field_name => $field_val) {
-			if($field_name == $this->_primary_key || !isset($real_field[$field_name])) {
+			if($field_name == $this->_primary_key) {
 				continue;
 			}
 			
 			$values[$field_name] = $field_val;
 		}
-		
+
 		Db::update($this->_table, 
 				$values, 
 				$this->_primary_key . ' = ?', 
@@ -262,23 +261,7 @@ class Entity implements ArrayAccess
 	 */
 	private function storeInsert()
 	{
-		$values = array();
-		$real_field = Db::getColumns($this->_table);
-
-		foreach($this->storage as $field_name => $field_val) {
-			if(!isset($real_field[$field_name])) {
-				continue;
-			}
-			
-			// do not insert if column is null, has default value and NOT NULL
-			if($real_field[$field_name]['Null'] == 'NO' && $field_val === null && $real_field[$field_name]['Default'] != null) {
-				continue;
-			}
-			
-			$values[$field_name] = $field_val;
-		}
-		
-		$this[$this->_primary_key] = Db::insert($this->_table, $values);
+		$this[$this->_primary_key] = Db::insert($this->_table, $this->storage);
 	}
 	
 	
