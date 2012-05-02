@@ -1,6 +1,7 @@
 <?php
 /**
  * BakedCarrot ORM collection
+ * Collection class represent TABLE of database, that holds rows represented by Entity class
  *
  * @package BakedCarrot
  * @subpackage Db
@@ -9,16 +10,27 @@
 class Collection extends Query
 {
 	private $entity_info = null;
-	
-	
+
+
+	/**
+	 * Creates new collection that holds entities of $entity_name class
+	 *
+	 * @param string $entity_name name of the entity
+	 */
 	public function __construct($entity_name)
 	{
 		$this->entity_name = ucfirst($entity_name);
 		$this->entity_info = Orm::entityInfo($entity_name);
 		$this->reset();
 	}
-	
-	
+
+
+	/**
+	 * Returns the object by its ID or creates new object if it's not found
+	 *
+	 * @param null $id
+	 * @return bool|null
+	 */
 	public function load($id = null)
 	{	
 		$object = null;
@@ -33,28 +45,47 @@ class Collection extends Query
 		
 		return $object;
 	}
-	
-	
+
+
+	/**
+	 * Resets internal query
+	 *
+	 * @return Query
+	 */
 	public function reset()
 	{	
 		parent::reset();
 
 		return $this->table($this->entity_info['table']);
 	}
-	
-	
-	public function swap(Entity $object1, Entity $object2, $property)
+
+
+	/**
+	 * Swaps field values of two objects
+	 *
+	 * @param Entity $object1
+	 * @param Entity $object2
+	 * @param string $field name of the field to be swapped
+	 */
+	public function swap(Entity $object1, Entity $object2, $field)
 	{
-		$old_property = $object1[$property];
+		$old_field = $object1[$field];
 		
-		$object1[$property] = $object2[$property];
-		$object2[$property] = $old_property;
+		$object1[$field] = $object2[$field];
+		$object2[$field] = $old_field;
 		
 		$object1->store();
 		$object2->store();
 	}
 
 
+	/**
+	 * Loads the class of an entity
+	 *
+	 * @static
+	 * @param $clsss
+	 * @return string
+	 */
 	static function loadEntity($clsss)
 	{
 		$class = ucfirst($clsss);
@@ -68,7 +99,14 @@ class Collection extends Query
 		return $class;
 	}
 
-	
+
+	/**
+	 * Creates an empty entity, optionally hydrate it with $data
+	 *
+	 * @param null $data
+	 * @return mixed
+	 * @throws BakedCarrotOrmException
+	 */
 	final public function create($data = null)
 	{
 		$class = self::loadEntity($this->entity_name);

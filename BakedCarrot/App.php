@@ -312,7 +312,7 @@ class App
 	/**
 	 * Handles default exception if it wasn't handled before
 	 *
-	 * @param Exception $e exception to be handeled 
+	 * @param Exception $e exception to be handled
 	 * @return void
 	 * @static
 	 */
@@ -375,7 +375,7 @@ class App
 	
 	/**
 	 * Handle php errors (except fatals) by throwing BakedCarrotException.
-	 * Returns true if error has been handeled
+	 * Returns true if error has been handled
 	 *
 	 * @param $errno error number
 	 * @param $errstr error message
@@ -431,7 +431,7 @@ class App
 	 * 
 	 * "handlerExceptionName" must be defined in controller
 	 *
-	 * @param $class_name name of the exception to be handeled
+	 * @param $class_name name of the exception to be handled
 	 * @param $handler name of the controller that handle the exception
 	 * @return void
 	 * @static
@@ -568,7 +568,7 @@ class App
 	 * @param string $path cookie path
 	 * @param string $domain cookie domain
 	 * @param bool $secure sends the cookie only for SSL connection
-	 * @param bool $httponly cookie only accessible throught plain HTTP connection
+	 * @param bool $httponly cookie only accessible through plain HTTP connection
 	 * @return bool operation result
 	 * @static
 	 */
@@ -599,7 +599,7 @@ class App
 	 * Get cookie value
 	 *
 	 * @param string $key name of the cookie
-	 * @return string|false cookie valuie or false if cookie is invalid or doesn't exists
+	 * @return string|false cookie value or false if cookie is invalid or doesn't exists
 	 * @static
 	 */
 	public static function getCookie($key)
@@ -651,7 +651,7 @@ class App
      * @param string $path cookie path
      * @param string $domain cookie domain
      * @param bool $secure sends the cookie only for SSL connection
-     * @param bool $httponly cookie only accessible throught plain HTTP connection
+     * @param bool $httponly cookie only accessible through plain HTTP connection
 	 * @static
 	 */
 	public static function deleteCookie($key, $path = '/', $domain = '', $secure = false, $httponly = false)

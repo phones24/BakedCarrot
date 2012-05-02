@@ -2,7 +2,7 @@
 /**
  * BakedCarrot ORM entity class
  * 
- * Provides entity-related ORM functionality. All user entitys should inherits this class.
+ * Provides entity-related ORM functionality. All user entities should inherits this class.
  * The objects of this class managed my Collection and should not be created manually.
  *	
  *		<code>      
@@ -169,8 +169,16 @@ class Entity implements ArrayAccess
 	
 		return $to_export;
 	}
-	
-	
+
+
+	/**
+	 * Sets the field value in a proper way
+	 * This is third method of setting the value of the field, beside those mentioned in the class description
+	 *
+	 * @param string $key name of the field
+	 * @param mixed $value value of the field
+	 * @return void
+	 */
 	public function setFieldValue($key, $value)
 	{
 		if(is_null($key)) {
@@ -184,9 +192,15 @@ class Entity implements ArrayAccess
 			$this->modified = true;
 		}
 	}
-	
-	
-	public function fieldExists($field) 
+
+
+	/**
+	 * Checks if the field is really exists (even if it sets to NULL)
+	 *
+	 * @param $field
+	 * @return bool
+	 */
+	public function fieldExists($field)
 	{
 		return array_key_exists($field, $this->storage);
 	}
@@ -230,7 +244,7 @@ class Entity implements ArrayAccess
 	
 
 	/**
-	 * Updating record from object's properties
+	 * Updating actual record from object's properties
 	 *
 	 * @return void
 	 */
@@ -314,7 +328,6 @@ class Entity implements ArrayAccess
 		Db::delete($this->_table, $this->_primary_key . ' = ?', array($this->getId()));
 		
 		$this->trigger('onAfterDelete');
-		
 		$this->storage = null;
 		$this->modified = false;
 		$this->modified_fields = array();
@@ -325,7 +338,7 @@ class Entity implements ArrayAccess
 	/**
 	 * Reload record from database
 	 *
-	 * @return bool returns TRUE if records actully reloaded, FALSE if not
+	 * @return bool returns TRUE if records actually reloaded, FALSE if not
 	 */
 	public function reload()
 	{
@@ -346,14 +359,14 @@ class Entity implements ArrayAccess
 
 	
 	/**
-	 * Returns the array of objects connected with given object through many-to-many relationship
+	 * Returns the collection of objects connected with given object through many-to-many relationship
 	 * @param string $associated_class_name entity name
 	 * @param string $join_table name of the relationship table
 	 * @param string $base_table_key name of the foreign key of base table
 	 * @param string $associated_table_key name of the foreign key of associated table
 	 * @param string $join_table_fields list of fields, that will be selected from the join table
 	 *
-	 * @return array 
+	 * @return Collection
 	 */
 	public function hasManyThrough($associated_class_name, $join_table = null, $base_table_key = null, $associated_table_key = null, $join_table_fields = null)
 	{
@@ -381,8 +394,15 @@ class Entity implements ArrayAccess
 
 		return $collection;
 	}
-	
 
+
+	/**
+	 * Returns the collection of objects related to current with one-to-many relationship
+	 *
+	 * @param string $associated_class_name class name of related object
+	 * @param null $foreign_key use this foreign key name instead of default "tablename_id"
+	 * @return Collection
+	 */
 	public function hasMany($associated_class_name, $foreign_key = null)
 	{
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
@@ -390,8 +410,15 @@ class Entity implements ArrayAccess
 
 		return $collection;
 	}
-	
-	
+
+
+	/**
+	 * Returns the collection of objects related to current with one-to-one relationship
+	 *
+	 * @param string $associated_class_name class name of related object
+	 * @param null $foreign_key use this foreign key name instead of default "tablename_id"
+	 * @return Collection
+	 */
 	public function hasOne($associated_class_name, $foreign_key = null)
 	{
 		$foreign_key = $foreign_key ? $foreign_key : $this->_table . '_id';
@@ -401,6 +428,13 @@ class Entity implements ArrayAccess
 	}
 
 
+	/**
+	 * Returns the collection of objects related to current with one-to-one relationship (reversed)
+	 *
+	 * @param string $associated_class_name class name of related object
+	 * @param null $foreign_key use this foreign key name instead of default "tablename_id"
+	 * @return Collection
+	 */
 	public function belongsTo($associated_class_name, $foreign_key = null)
 	{
 		$collection = Orm::collection($associated_class_name);
@@ -412,8 +446,13 @@ class Entity implements ArrayAccess
 
 		return $collection;
 	}
-	
 
+
+	/**
+	 * @param Entity $object
+	 * @param null $foreign_key
+	 * @return bool
+	 */
 	public function owns(Entity $object, $foreign_key = null)
 	{
 		$associated_entity_info = $object->info();
@@ -424,8 +463,15 @@ class Entity implements ArrayAccess
 
 		return (bool)$result;
 	}
-	
-	
+
+
+	/**
+	 * @param Entity $object
+	 * @param null $join_table
+	 * @param null $base_table_key
+	 * @param null $associated_table_key
+	 * @return bool
+	 */
 	public function ownsThrough(Entity $object, $join_table = null, $base_table_key = null, $associated_table_key = null)
 	{
 		$associated_entity_info = $object->info();
@@ -438,8 +484,14 @@ class Entity implements ArrayAccess
 		
 		return (bool)$result;
 	}
-	
-	
+
+
+	/**
+	 * Attach one object to another with one-to-many relationship
+	 * @param Entity $object
+	 * @param string|null $foreign_key
+	 * @return bool
+	 */
 	public function attach(Entity $object, $foreign_key = null)
 	{
 		if($object->owns($this)) {
@@ -456,7 +508,17 @@ class Entity implements ArrayAccess
 		return $this->reload();
 	}
 
-	
+
+	/**
+	 * Attach object to current object with many-to-many relationship
+	 *
+	 * @param Entity $object
+	 * @param null $join_table
+	 * @param null $base_table_key
+	 * @param null $associated_table_key
+	 * @param null $join_table_fields
+	 * @return bool
+	 */
 	public function attachThrough(Entity $object, $join_table = null, $base_table_key = null, $associated_table_key = null, $join_table_fields = null)
 	{
 		$associated_entity_info = $object->info();
@@ -494,8 +556,15 @@ class Entity implements ArrayAccess
 		
 		return true;
 	}
-	
-	
+
+
+	/**
+	 * Remove relation between objects related with one-to-many relationship
+	 *
+	 * @param Entity $object
+	 * @param null $foreign_key
+	 * @return bool
+	 */
 	public function detach(Entity $object, $foreign_key = null)
 	{
 		if(!$this->owns($object)) {
@@ -512,7 +581,16 @@ class Entity implements ArrayAccess
 		return $this->reload();
 	}
 
-	
+
+	/**
+	 * Remove relation between objects related with many-to-many relationship
+	 *
+	 * @param Entity $object
+	 * @param null $join_table
+	 * @param null $base_table_key
+	 * @param null $associated_table_key
+	 * @return mixed
+	 */
 	public function detachThrough(Entity $object, $join_table = null, $base_table_key = null, $associated_table_key = null)
 	{
 		$associated_entity_info = $object->info();
@@ -524,8 +602,16 @@ class Entity implements ArrayAccess
 
 		return Db::delete($join_table, $base_table_key . ' = ? and ' . $associated_table_key . ' = ?', array($this->getId(), $object->getId()));
 	}
-	
-	
+
+
+	/**
+	 * Remove all many-to-many relations between current object and other object of given class name
+	 *
+	 * @param string $associated_class_name
+	 * @param null $join_table
+	 * @param null $base_table_key
+	 * @return mixed
+	 */
 	public function clearRelations($associated_class_name, $join_table = null, $base_table_key = null)
 	{
 		$associated_entity_info = Orm::entityInfo($associated_class_name);
@@ -536,8 +622,17 @@ class Entity implements ArrayAccess
 
 		return Db::delete($join_table, $base_table_key . ' = ?', array($this->getId()));
 	}
-	
 
+
+	/**
+	 * Remove many-to-many relations with objects that not in $related_objects array
+	 *
+	 * @param $associated_class_name
+	 * @param array $related_objects
+	 * @param null $join_table
+	 * @param null $base_table_key
+	 * @param null $associated_table_key
+	 */
 	public function clearUnrelated($associated_class_name, array $related_objects, $join_table = null, $base_table_key = null, $associated_table_key = null)
 	{
 		$ids = array();
@@ -560,41 +655,72 @@ class Entity implements ArrayAccess
 			}
 		}
 	}
-	
-	
-	public function offsetSet($offset, $value) 
+
+
+	/**
+	 * Used to implement ArrayAccess
+	 *
+	 * @param $offset
+	 * @param $value
+	 */
+	public function offsetSet($offset, $value)
 	{
 		$this->setFieldValue($offset, $value);
 	}
-	
-	
-	public function offsetExists($offset) 
+
+
+	/**
+	 * Used to implement ArrayAccess
+	 *
+	 * @param $offset
+	 * @return bool
+	 */
+	public function offsetExists($offset)
 	{
 		return isset($this->storage[$offset]);
 	}
-	
-	
-	public function offsetUnset($offset) 
+
+
+	/**
+	 * Used to implement ArrayAccess
+	 *
+	 * @param $offset
+	 */
+	public function offsetUnset($offset)
 	{
 		unset($this->modified_fields[$offset]);
 		unset($this->storage[$offset]);
 	}
-	
-	
-	public function offsetGet($offset) 
+
+
+	/**
+	 * Used to implement ArrayAccess
+	 *
+	 * @param $offset
+	 * @return null
+	 */
+	public function offsetGet($offset)
 	{
 		return isset($this->storage[$offset]) ? $this->storage[$offset] : null;
 	}
-	
-	
+
+
+	/**
+	 * @param $key
+	 * @return bool
+	 */
 	public function __isset($key)
 	{
 		return isset($this->_has_many[$key]) || isset($this->_has_many_through[$key]) || 
 				isset($this->_belongs_to[$key]) || isset($this->_has_one[$key]) || 
 				isset($this->storage[$key]);
 	}
-	
-	
+
+
+	/**
+	 * @param $key
+	 * @return \Collection|null
+	 */
 	public function __get($key)
 	{
 		if(isset($this->_has_many[$key]) && isset($this->_has_many[$key]['entity'])) {
@@ -650,8 +776,13 @@ class Entity implements ArrayAccess
 			return $this->fieldExists($key) ? $this->storage[$key] : null;
 		}
 	}
-	
-	
+
+
+	/**
+	 * @param $key
+	 * @param $value
+	 * @return mixed
+	 */
 	public function __set($key, $value)
 	{
 		if(isset($this->_has_one[$key]) && isset($this->_has_one[$key]['entity']) && is_object($value) && is_a($value, Orm::ENTITY_BASE_CLASS)) {
@@ -719,6 +850,8 @@ class Entity implements ArrayAccess
 			$field = isset($this->_has_many[$key]['foreign_key']) ? $this->_has_many[$key]['foreign_key'] : $this->_table . '_id';
 		
 			foreach($value as $num => $object) {
+				$entity_info = null;
+
 				// create fake object if we got array of IDs as $value
 				if(is_numeric($object)) { 
 					$entity_info = Orm::entityInfo($this->_has_many[$key]['entity']);
@@ -819,14 +952,27 @@ class Entity implements ArrayAccess
 			$this->setFieldValue($key, $value);
 		}
 	}
-	
 
+
+	/**
+	 * Adds job to named queue with type $type
+	 *
+	 * @param $queue
+	 * @param $type
+	 * @param $params
+	 */
 	private function addJob($queue, $type, $params)
 	{
 		$this->queue[$queue][$type][] = $params;
 	}
 
 
+	/**
+	 * Runs jobs from named queue
+	 *
+	 * @param $queue
+	 * @throws BakedCarrotOrmException
+	 */
 	private function runJobs($queue)
 	{
 		if(isset($this->queue[$queue]) && is_array($this->queue[$queue])) {
@@ -850,9 +996,17 @@ class Entity implements ArrayAccess
 			
 			$this->queue[$queue] = array();
 		}
-	}	
+	}
 
 
+	/**
+	 * Creates join table name
+	 *
+	 * @static
+	 * @param $table1
+	 * @param $table2
+	 * @return string
+	 */
 	private static function createJoinTable($table1, $table2)
 	{
 		$tables = array($table1, $table2);
@@ -862,6 +1016,15 @@ class Entity implements ArrayAccess
 	}
 
 
+	/**
+	 * Creates table name from entity name
+	 *
+	 *      UserProfile => user_profile
+	 *
+	 * @static
+	 * @param $entity_name
+	 * @return string
+	 */
 	private static function createTableFromEntityName($entity_name)
 	{
 		return strtolower(preg_replace("/([a-z])([A-Z])/", "\\1_\\2", $entity_name));

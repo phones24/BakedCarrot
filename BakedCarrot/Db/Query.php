@@ -14,8 +14,13 @@ class Query
 	private $sql_accum = array();
 	private $values_accum = array();
 	private $use_cache = false;
-	
 
+
+	/**
+	 * Creates empty query builder
+	 *
+	 * @param string|null $entity_name
+	 */
 	public function __construct($entity_name = null)
 	{
 		if($entity_name) {
@@ -23,7 +28,12 @@ class Query
 		}
 	}
 
-	
+
+	/**
+	 * Returns array of objects from collection
+	 *
+	 * @return array
+	 */
 	public function findAll()
 	{
 		$result = array();
@@ -54,13 +64,12 @@ class Query
 		return $result;
 	}
 
-	// algo:
-	// 1. check external cache 
-	// 2. return if it's exists there
-	// 3. if not - check internal cache
-	// 4. load actual data from database
-	// 5. store in external cache
-	// 6. if unavailable - store in internal cache
+
+	/**
+	 * Returns one object from collection
+	 *
+	 * @return mixed|null
+	 */
 	public function findOne()
 	{
 		if(!$this->hasStatement('select')) {
@@ -96,7 +105,12 @@ class Query
 		return $result;
 	}
 
-	
+
+	/**
+	 * Returns objects count in collection
+	 *
+	 * @return bool|null
+	 */
 	public function count()
 	{
 		$this->select('count(*)');
@@ -127,6 +141,11 @@ class Query
 	}
 
 
+	/**
+	 * Remove objects from collection
+	 *
+	 * @return mixed
+	 */
 	public function delete()
 	{
 		$this->remove('select');
@@ -145,7 +164,13 @@ class Query
 		return Db::exec($sql, $this->values_accum);
 	}
 
-	
+
+	/**
+	 * Bulk updates objects in collection
+	 *
+	 * @param array $field_values
+	 * @return mixed
+	 */
 	public function update(array $field_values)
 	{
 		$this->remove('select');
@@ -164,7 +189,13 @@ class Query
 		return Db::exec($sql, $this->values_accum);
 	}
 
-	
+
+	/**
+	 * Sets the entity name
+	 *
+	 * @param $class_name
+	 * @return \Query
+	 */
 	public function setEntity($class_name)
 	{
 		$this->entity_name = $class_name;
@@ -172,7 +203,14 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Adds WHERE statement to internal query
+	 *
+	 * @param $sql
+	 * @param array $values
+	 * @return \Query
+	 */
 	public function where($sql, $values = array())
 	{
 		$this->sql_accum[] = array(
@@ -186,6 +224,12 @@ class Query
 	}
 
 
+	/**
+	 * Adds SELECT statement to internal query
+	 *
+	 * @param $sql
+	 * @return \Query
+	 */
 	public function select($sql)
 	{
 		$this->remove('select');
@@ -199,7 +243,13 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Sets the table name to operate with
+	 *
+	 * @param $sql
+	 * @return \Query
+	 */
 	public function table($sql)
 	{
 		$this->remove('table');
@@ -213,7 +263,13 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Adds LIMIT statement to internal query
+	 *
+	 * @param $limit
+	 * @return \Query
+	 */
 	public function limit($limit)
 	{
 		$this->remove('limit');
@@ -227,7 +283,13 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Adds OFFSET statement to internal query
+	 *
+	 * @param $offset
+	 * @return \Query
+	 */
 	public function offset($offset)
 	{
 		$this->remove('offset');
@@ -241,7 +303,13 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Adds ORDER statement to internal query
+	 *
+	 * @param $sql
+	 * @return \Query
+	 */
 	public function order($sql)
 	{
 		$this->remove('order');
@@ -254,8 +322,14 @@ class Query
 
 		return $this;
 	}
-	
-	
+
+
+	/**
+	 * Use Pagination object for limiting the results
+	 *
+	 * @param Pagination $pager
+	 * @return \Query
+	 */
 	public function pagination(Pagination $pager)
 	{
 		$this->offset($pager->getOffset());
@@ -264,7 +338,13 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Removes the statement from internal query
+	 *
+	 * @param $stmt
+	 * @return \Query
+	 */
 	public function remove($stmt)
 	{
 		foreach($this->sql_accum as $num => $options) {
@@ -276,7 +356,12 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Reset internal query
+	 *
+	 * @return \Query
+	 */
 	public function reset()
 	{
 		$this->sql_accum = array();
@@ -284,7 +369,12 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Tells to use cache
+	 *
+	 * @return \Query
+	 */
 	public function cached()
 	{
 		$this->use_cache = true;
@@ -292,7 +382,13 @@ class Query
 		return $this;
 	}
 
-	
+
+	/**
+	 * Returns TRUE if internal query has statement $stmt
+	 *
+	 * @param $stmt
+	 * @return bool
+	 */
 	public function hasStatement($stmt)
 	{
 		foreach($this->sql_accum as $num => $options) {
@@ -304,7 +400,13 @@ class Query
 		return false;
 	}
 
-	
+
+	/**
+	 * Returns first matched query by its name
+	 *
+	 * @param $stmt
+	 * @return null
+	 */
 	public function getStatement($stmt)
 	{
 		foreach($this->sql_accum as $num => $options) {
@@ -315,8 +417,16 @@ class Query
 		
 		return null;
 	}
-	
-	
+
+
+	/**
+	 * Used to sort statement before compilation
+	 *
+	 * @static
+	 * @param $a
+	 * @param $b
+	 * @return int
+	 */
 	private static function cmpFunction($a, $b)
 	{
 		if($a['sort'] == $b['sort']) {
@@ -325,8 +435,14 @@ class Query
 		
 		return ($a['sort'] > $b['sort']) ? 1 : -1;
 	}
-	
-	
+
+
+	/**
+	 * Compile real SQL query from internal query
+	 *
+	 * @return string
+	 * @throws BakedCarrotOrmException
+	 */
 	private function compile()
 	{
 		$sql = '';

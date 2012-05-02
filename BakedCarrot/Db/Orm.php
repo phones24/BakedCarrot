@@ -15,10 +15,11 @@ class Orm
 
 	
 	/**
-	 * Creates a new object of given entity
+	 * Creates a new collection object of given entity
 	 *
 	 * @param string $name name of the entity
 	 * @return Collection $collection collection object
+	 * @throws BakedCarrotOrmException
 	 */
 	public static function &collection($name)
 	{
@@ -51,6 +52,7 @@ class Orm
 	 *
 	 * @param string $entity_name name of the entity
 	 * @return array
+	 * @throws BakedCarrotOrmException
 	 */
 	public static function &entityInfo($entity_name)
 	{
@@ -66,7 +68,6 @@ class Orm
 			if(!is_subclass_of($object, Orm::ENTITY_BASE_CLASS) && get_class($object) != Orm::ENTITY_BASE_CLASS) {
 				throw new BakedCarrotOrmException("Class $class is not a subclass of " . Orm::ENTITY_BASE_CLASS);
 			}
-			
 		}
 		else {
 			$class = Orm::ENTITY_BASE_CLASS;
