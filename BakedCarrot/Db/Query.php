@@ -472,9 +472,9 @@ class Query
 					}
 					
 					$sql = $statement . ' ' . $tbl['sql'] . ' set ';
-					$sql .= implode(' = ?, ', $param);
+					$sql .= implode(' = ?, ', array_keys($values));
 					$sql .= ' = ? ';
-					$this->values_accum = array_merge($this->values_accum, $values);
+					$this->values_accum = array_merge($this->values_accum, array_values($values));
 					
 					break;
 					
