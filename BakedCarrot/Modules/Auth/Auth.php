@@ -44,10 +44,16 @@ class Auth extends ParamLoader
 	}
 	
 
-	public function login($username, $password, $remember)
+	public function login($username, $password, $remember = false, $path = '/')
 	{
 		$user = $this->driver->getUserByCredentials($username, App::hash($password));
 
+		return $this->loginUser($user, $remember, $path);
+	}
+	
+	
+	public function loginUser($user, $remember = false, $path = '/')
+	{
 		if(!$user) {
 			return false;
 		}
@@ -55,21 +61,23 @@ class Auth extends ParamLoader
 		$token = $this->driver->createSession($user);
 
 		if($remember) {
-			$ret = App::setCookie($this->session_name, $token, time() + $this->session_lifetime);
+			$ret = App::setCookie($this->session_name, $token, time() + $this->session_lifetime, $path);
 		}
 		else {
-			$ret = App::setCookie($this->session_name, $token, 0);
+			$ret = App::setCookie($this->session_name, $token, 0, $path);
 		}
 		
 		if(!$ret) {
 			throw new BakedCarrotAuthException('Cannot set session cookie');
 		}
 		
-		return $user;
+		$this->user = $user;
+		
+		return $this->user;
 	}
 	
 	
-	public function logout()
+	public function logout($path = '/')
 	{
 		if(!isset($_COOKIE[$this->session_name])) {
 			return;
@@ -78,7 +86,7 @@ class Auth extends ParamLoader
 		$token = App::getCookie($this->session_name);
 		$this->driver->removeSession($token);
 		
-		App::deleteCookie($this->session_name);
+		App::deleteCookie($this->session_name, $path);
 	}
 
 	
@@ -133,6 +141,12 @@ class Auth extends ParamLoader
 	public function loggedIn()
 	{
 		return (bool)$this->user;
+	}
+	
+	
+	public function getUserByCredentials($login, $password)
+	{
+		return $this->driver->getUserByCredentials($login,  App::hash($password));
 	}
 	
 	

@@ -13,34 +13,41 @@ class Validator
 	const RULE_NUMERIC = 2;
 	const RULE_FLOAT = 3;
 	const RULE_ARRAY = 4;
-	const RULE_ID = 4;
-	const RULE_EMAIL = 5;
-	const RULE_INT = 5;
+	const RULE_ID = 5;
+	const RULE_EMAIL = 6;
+	const RULE_INT = 7;
 
 	protected $errors = array();
-	private $accum_errors = false;
 	private $exception_on_error = false;
 
 
 	/**
 	 * Public constructor
 	 *
-	 * @param bool $accum_errors should we accumulate all the errors or just one
 	 * @param bool $exception_on_error should we throw the exception on the error
 	 */
-	public function __construct($accum_errors = false, $exception_on_error = false)
+	public function __construct($exception_on_error = false)
 	{
-		$this->accum_errors = $accum_errors;
 		$this->exception_on_error = $exception_on_error;
 	}
 
 
-	public function raise()
+	/**
+	 * Throw the exception
+	 *
+	 * @param array $error
+	 * @throw BakedCarrotValidatorException
+	 */
+	public function raise(array $error = null)
 	{
-		throw new BakedCarrotValidatorException($this);
-
+		if(!$error) {
+			$error = $this->getLastError();
+		}
+		
+		throw new BakedCarrotValidatorException($error);
 	}
 
+	
 	/**
 	 * Checks if there are errors
 	 *
@@ -104,16 +111,16 @@ class Validator
 	 * @param $expr
 	 * @param $error_message
 	 * @param null $error_field
-	 * @return bool
+	 * @return bool|null
 	 */
 	public function validateExpr($expr, $error_message, $error_field = null)
 	{
-		if(!$this->accum_errors && $this->hasErrors()) {
-			return true;
-		}
-	
 		if((bool)$expr === true) {
 			$this->addError($error_message, $error_field);
+		}
+		
+		if($this->exception_on_error && $this->hasErrors()) {
+			$this->raise();
 		}
 		
 		return (bool)$expr === true;
@@ -127,16 +134,12 @@ class Validator
 	 * @param $rule
 	 * @param $error_message
 	 * @param null $error_field
-	 * @return bool
+	 * @return bool|null
 	 */
 	public function validate($value, $rule, $error_message, $error_field = null)
 	{
-		if(!$this->accum_errors && $this->hasErrors()) {
-			return true;
-		}
-		
 		$valid = false;
-
+		
 		switch($rule) {
 			//basic types
 			case Validator::RULE_STRING:
@@ -171,7 +174,7 @@ class Validator
 		
 			case Validator::RULE_EMAIL:
 				$value = trim($value);
-				$valid = (bool)preg_match('/^[A-sZ0-9._-]+@[A-Z0-9.-]+\.[A-Z]{2,6}$/i', $vlue);
+				$valid = (bool)preg_match('/^[A-sZ0-9._-]+@[A-Z0-9.-]+\.[A-Z]{2,6}$/i', $value);
 				break;
 		
 			default:
@@ -183,6 +186,10 @@ class Validator
 			$this->addError($error_message, $error_field);
 		}
 		
+		if($this->exception_on_error && $this->hasErrors()) {
+			$this->raise();
+		}
+			
 		return $valid;
 	}
 
@@ -200,6 +207,11 @@ class Validator
 	{
 		if(!array_key_exists($var_name, $_GET)) {
 			$this->addError($error_message, $error_field);
+			
+			if($this->exception_on_error) {
+				$this->raise();
+			}
+			
 			return false;
 		}
 		
@@ -220,15 +232,7 @@ class Validator
 	{
 		if(!array_key_exists($var_name, $_POST)) {
 			$this->addError($error_message, $error_field);
-			return false;
-		}
-		
-		return $this->validate($_POST[$var_name], $rule, $error_message, $error_field);
-	}
-
-}	
-
-
+			
 			if($this->exception_on_error) {
 				$this->raise();
 			}

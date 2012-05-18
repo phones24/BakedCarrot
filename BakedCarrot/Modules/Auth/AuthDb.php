@@ -20,9 +20,9 @@ class AuthDB extends AuthDriver
 	}
 	
 	
-	public function getUserByCredentials($login, $password)
+	public function getUserByCredentials($username, $password)
 	{
-		$user = Orm::collection('User')->where('username = ? and password = ?', array($login, $password))->findOne();
+		$user = Orm::collection('User')->where('username = ? and password = ?', array($username, $password))->findOne();
 	
 		return $user && $user->loaded() ? $user : null;
 	}

@@ -47,7 +47,7 @@ class AuthFile extends AuthDriver
 			return;
 		}
 		
-		if(!isset($user['username'])) {
+		if(empty($user['username'])) {
 			return;
 		}
 		
