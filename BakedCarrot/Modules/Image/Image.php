@@ -186,7 +186,7 @@ class Image extends ParamLoader
 		$new_width = floor($this->width / $coef);
 		$new_height = floor($this->height / $coef);
 		
-		$im_new = $this->createEmpty($new_width, $new_height);
+		$im_new = $this->newImage($new_width, $new_height);
 		
 		if(!imagecopyresampled($im_new, $this->handle, 0, 0, 0, 0, $new_width, $new_height, $this->width, $this->height)) {
 			throw new BakedCarrotImageException('Image resizing failed');
@@ -210,7 +210,7 @@ class Image extends ParamLoader
 			return $this;
 		}
 		
-		$im_new = $this->createEmpty($width, $height);
+		$im_new = $this->newImage($width, $height);
 		
 		$ret = false;
 		
@@ -287,7 +287,7 @@ class Image extends ParamLoader
 			imagedestroy($this->handle);
 		}
 		
-		$this->handle = $this->createEmpty($width, $height);
+		$this->handle = $this->newImage($width, $height);
 		
 		$font_size = 5;
 		
@@ -376,6 +376,69 @@ class Image extends ParamLoader
 		return $this;
 	}
 	
+
+	public function alphaMask($mask) 
+	{
+		$new_img = $this->newImage($this->getWidth(), $this->getHeight());
+		
+		if(get_class($mask) != 'Image') {
+			throw new BakedCarrotImageException('Mask should be instance of Image module');
+		}
+		
+		// resize the mask if it's not the same size
+		if($mask->getWidth() != $this->getWidth() || $mask->getHeight() != $this->getHeight()) {
+			$mask->resize($this->getWidth(), $this->getHeight(), self::RESIZE_BASE_MIN, true);
+		}
+		
+		// put the mask on
+		for($x = 0; $x < $this->getWidth(); $x++) {
+			for($y = 0; $y < $this->getHeight(); $y++) {
+				$alpha = imagecolorsforindex($mask->getHandle(), imagecolorat($mask->getHandle(), $x, $y));
+				$alpha = 127 - floor($alpha[ 'red' ] / 2);
+				$color = imagecolorsforindex($this->getHandle(), imagecolorat($this->getHandle(), $x, $y));
+				$new_color = imagecolorallocatealpha($new_img, $color['red'], $color['green'], $color['blue'], $alpha);
+				
+				imagesetpixel($new_img, $x, $y, $new_color);
+			}
+		}
+		
+		imagecopy($this->getHandle(), $new_img, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
+		imagedestroy($new_img);
+		
+/*
+		// Get sizes and set up new picture
+		$xSize = imagesx( $picture );
+		$ySize = imagesy( $picture );
+		$newPicture = imagecreatetruecolor( $xSize, $ySize );
+		imagesavealpha( $newPicture, true );
+		imagefill( $newPicture, 0, 0, imagecolorallocatealpha( $newPicture, 0, 0, 0, 127 ) );
+
+		// Resize mask if necessary
+		if( $xSize != imagesx( $mask ) || $ySize != imagesy( $mask ) ) {
+			$tempPic = imagecreatetruecolor( $xSize, $ySize );
+			imagecopyresampled( $tempPic, $mask, 0, 0, 0, 0, $xSize, $ySize, imagesx( $mask ), imagesy( $mask ) );
+			imagedestroy( $mask );
+			$mask = $tempPic;
+		}
+
+		// Perform pixel-based alpha map application
+		for( $x = 0; $x < $xSize; $x++ ) {
+			for( $y = 0; $y < $ySize; $y++ ) {
+				$alpha = imagecolorsforindex( $mask, imagecolorat( $mask, $x, $y ) );
+				$alpha = 127 - floor( $alpha[ 'red' ] / 2 );
+				$color = imagecolorsforindex( $picture, imagecolorat( $picture, $x, $y ) );
+				imagesetpixel( $newPicture, $x, $y, imagecolorallocatealpha( $newPicture, $color[ 'red' ], $color[ 'green' ], $color[ 'blue' ], $alpha ) );
+			}
+		}
+
+		// Copy back to original picture
+		//imagedestroy( $picture );
+		//$picture = $newPicture;
+		imagecopy($picture, $newPicture, 0, 0, 0, 0, $xSize, $ySize);
+		//imagedestroy($newPicture);
+*/		
+	}
+
 	
 	public function getHandle()
 	{
@@ -413,6 +476,38 @@ class Image extends ParamLoader
 	}
 
 
+	public function createEmpty($width, $height)
+	{
+		if(!is_null($this->handle)) {
+			imagedestroy($this->handle);
+		}
+		
+		$this->handle = imagecreatetruecolor($width, $height);
+		
+		$this->width = $width;
+		$this->height = $height;
+		$this->type = null;
+		$this->mime = null;
+
+		return $this;
+	}
+
+
+	private function newImage($width, $height)
+	{
+		$image = imagecreatetruecolor($width, $height);
+		
+		imagealphablending($image, false);
+		imagesavealpha($image, true);
+		
+		if(function_exists('imageantialias')) {
+			imageantialias($image, true);
+		}
+		
+		return $image;
+	}
+
+
 	private function loadData()
 	{
 		if(!is_null($this->handle)) {
@@ -440,21 +535,6 @@ class Image extends ParamLoader
 	}
 	
 	
-	private function createEmpty($width, $height)
-	{
-		$image = imagecreatetruecolor($width, $height);
-		
-		imagealphablending($image, false);
-		imagesavealpha($image, true);
-		
-		if(function_exists('imageantialias')) {
-			imageantialias($image, true);
-		}
-		
-		return $image;
-	}
-
-
 	private function formatSupported($format)
 	{
 		return in_array($format, $this->format_supported);
