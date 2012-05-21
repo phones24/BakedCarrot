@@ -8,7 +8,7 @@ class Log
 	
 	private static $instance = null;
 	private static $file = null;
-	private static $dir = 'logs';
+	private static $dir = LOGPATH;
 	private static $file_format = 'log_%Y-%m-%d.txt';
 	private static $min_level = null;
 	private static $enabled = null;
@@ -26,15 +26,11 @@ class Log
 		}
 
 		self::$instance = new self;
-		self::$file = DOCROOT . self::$dir . DIRECTORY_SEPARATOR . strftime(self::$file_format); 
+		self::$file = self::$dir . DIRECTORY_SEPARATOR . strftime(self::$file_format); 
 		
 		self::setEnabled(Config::getVar('log_enabled', false));
 		self::setLevel(Config::getVar('log_level', self::LEVEL_INFO));
 		
-		if(self::$enabled && is_file(self::$file)) {
-			@error_log("\n", 3, self::$file);
-		}
-
 		return self::$instance;
 	}
 
@@ -48,10 +44,6 @@ class Log
 	public static function setFile($file)
 	{
 		self::$file = $file;
-		
-		if(self::$enabled) {
-			@error_log("\n", 3, self::$file);
-		}
 	}
 	
 	
@@ -65,7 +57,7 @@ class Log
 	{
 		self::$dir = $dir;
 	
-		self::$file = DOCROOT . self::$dir . DIRECTORY_SEPARATOR . strftime(self::$file_format); 
+		self::$file = self::$dir . DIRECTORY_SEPARATOR . strftime(self::$file_format); 
 	}
 	
 	
