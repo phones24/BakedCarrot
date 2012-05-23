@@ -60,7 +60,9 @@ class AuthDB extends AuthDriver
 	{
 		$session = Orm::collection('Session')->where('token = ?', array($token))->findOne();
 		
-		$session->delete();
+		if($session) {
+			$session->delete();
+		}
 	}
 	
 	
