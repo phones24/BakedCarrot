@@ -20,6 +20,7 @@ class Auth extends ParamLoader
 	protected $session_lifetime = null;
 	protected $anon_login = null;
 	protected $anon_name = null;
+	protected $domain = null;
 	
 
 	public function __construct(array $params = null)
@@ -34,6 +35,7 @@ class Auth extends ParamLoader
 		$this->session_lifetime = $this->loadParam('session_lifetime', $params, 3600 * 24 * 365);
 		$this->anon_login = $this->loadParam('anon_login', $params, false);
 		$this->anon_name = $this->loadParam('anon_name', $params, 'anon');
+		$this->domain = $this->loadParam('domain', $params, '');
 
 		$driver_class = 'Auth' . $driver_class;
 		if(!class_exists($driver_class)) {
@@ -44,27 +46,28 @@ class Auth extends ParamLoader
 	}
 	
 
-	public function login($username, $password, $remember = false, $path = '/')
+	public function login($username, $password, $remember = false, $path = '/', $domain = '')
 	{
 		$user = $this->driver->getUserByCredentials($username, App::hash($password));
 
-		return $this->loginUser($user, $remember, $path);
+		return $this->loginUser($user, $remember, $path, $domain);
 	}
 	
 	
-	public function loginUser($user, $remember = false, $path = '/')
+	public function loginUser($user, $remember = false, $path = '/', $domain = '')
 	{
 		if(!$user) {
 			return false;
 		}
 		
 		$token = $this->driver->createSession($user);
-
+		$domain = !empty($domain) ? $domain : $this->domain;
+		
 		if($remember) {
-			$ret = App::setCookie($this->session_name, $token, time() + $this->session_lifetime, $path);
+			$ret = App::setCookie($this->session_name, $token, time() + $this->session_lifetime, $path, $domain);
 		}
 		else {
-			$ret = App::setCookie($this->session_name, $token, 0, $path);
+			$ret = App::setCookie($this->session_name, $token, 0, $path, $domain);
 		}
 		
 		if(!$ret) {
