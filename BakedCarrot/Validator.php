@@ -147,16 +147,6 @@ class Validator
 				$valid = is_string($value) && strlen($value) > 0;
 				break;
 		
-			case Validator::RULE_INT:
-				$value = trim($value);
-				$valid = is_int($value);
-				break;
-		
-			case Validator::RULE_FLOAT:
-				$value = trim($value);
-				$valid = is_float($value);
-				break;
-		
 			case Validator::RULE_ARRAY:
 				$valid = is_array($value) && !empty($value);
 				break;
@@ -169,7 +159,7 @@ class Validator
 		
 			case Validator::RULE_ID:
 				$value = trim($value);
-				$valid = is_int($value) && $value >= 0;
+				$valid = is_numeric($value) && $value >= 0;
 				break;
 		
 			case Validator::RULE_EMAIL:
