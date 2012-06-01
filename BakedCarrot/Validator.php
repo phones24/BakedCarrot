@@ -149,7 +149,7 @@ class Validator
 		
 			case Validator::RULE_INT:
 				$value = trim($value);
-				$valid = is_int($value) && $value >= 0;
+				$valid = is_int($value);
 				break;
 		
 			case Validator::RULE_FLOAT:

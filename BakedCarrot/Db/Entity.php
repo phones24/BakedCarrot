@@ -792,20 +792,24 @@ class Entity implements ArrayAccess
 			$field = isset($this->_has_one[$key]['foreign_key']) ? $this->_has_one[$key]['foreign_key'] : $this->_table . '_id';
 			
 			if($entity_info['entity'] == $this->_has_one[$key]['entity']) {
+				
+				/* @todo remove this \|/ condition! 
+				*/
+				
 				//only update the field if it's different from $value
-				if(!$value->fieldExists($field) || $value[$field] != $this->getId()) {
+				//if(!$value->fieldExists($field) || $value[$field] != $this->getId()) {
 					$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_SET_VAL, array(
 							'object_left' => $value, 
 							'field_left' => $field, 
 							'object_right' => $this, 
 							'field_right' => $this->_primary_key
 						));
-
+						
 					$this->addJob(self::QUEUE_POST_STORE, self::QUEUE_TYPE_EXEC, array(
 							 'object' => $value, 
 							 'method' => 'store'
 						));
-				}
+				//}
 			}
 		}
 		elseif(isset($this->_belongs_to[$key]) && isset($this->_belongs_to[$key]['entity'])) {
