@@ -159,7 +159,7 @@ class Validator
 		
 			case Validator::RULE_ID:
 				$value = trim($value);
-				$valid = is_numeric($value) && $value >= 0;
+				$valid = is_numeric($value) && strval(intval($value)) == strval($value) && $value >= 0;
 				break;
 		
 			case Validator::RULE_EMAIL:
