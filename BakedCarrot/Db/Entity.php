@@ -184,6 +184,14 @@ class Entity implements ArrayAccess
 		if(is_null($key)) {
 			return;
 		}
+
+		if(method_exists($this, 'onSetValue')) {
+			$result = $this->onSetValue($key, $value);
+			
+			if($result === false) {
+				return;
+			}
+		}
 		
 		$this->modified_fields[$key] = !isset($this->storage[$key]) || $this->storage[$key] !== $value;
 		$this->storage[$key] = $value;
@@ -193,6 +201,17 @@ class Entity implements ArrayAccess
 		}
 	}
 
+
+	/**
+	 * Returns list of fields cf the entity
+	 *
+	 * @return array
+	 */
+	public function getFields()
+	{
+		return array_keys($this->storage);
+	}
+	
 
 	/**
 	 * Checks if the field is really exists (even if it sets to NULL)
@@ -206,6 +225,22 @@ class Entity implements ArrayAccess
 	}
 	
 
+	
+	/**
+	 * Filter value before inserting into database
+	 *
+	 * @param $var
+	 * @return bool
+	 */
+	private function filterValue($var)
+	{
+		if(is_object($var) && is_array($var)) {
+			return false;
+		}
+			
+		return true;
+	}
+	
 	
 	/**
 	 * Stores object to database
@@ -260,6 +295,8 @@ class Entity implements ArrayAccess
 			$values[$field_name] = $field_val;
 		}
 
+		$values = array_filter($values, array($this, 'filterValue'));
+		
 		Db::update($this->_table, 
 				$values, 
 				$this->_primary_key . ' = ?', 
@@ -275,7 +312,9 @@ class Entity implements ArrayAccess
 	 */
 	private function storeInsert()
 	{
-		$this[$this->_primary_key] = Db::insert($this->_table, $this->storage);
+		$values = array_filter($this->storage, array($this, 'filterValue'));
+		
+		$this[$this->_primary_key] = Db::insert($this->_table, $values);
 	}
 	
 	
@@ -294,7 +333,7 @@ class Entity implements ArrayAccess
 			foreach($fields as $field) {
 				$field = trim($field);
 				if($field) {
-					$value = isset($source[$field]) && !is_array($source[$field]) && !is_object($source[$field]) ? $source[$field] : null;
+					$value = isset($source[$field]) ? $source[$field] : null;
 					$this->setFieldValue($field, $value);
 				}
 			}
