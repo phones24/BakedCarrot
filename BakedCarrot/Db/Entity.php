@@ -234,7 +234,7 @@ class Entity implements ArrayAccess
 	 */
 	private function filterValue($var)
 	{
-		if(is_object($var) && is_array($var)) {
+		if(is_object($var) || is_array($var)) {
 			return false;
 		}
 			
