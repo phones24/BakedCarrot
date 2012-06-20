@@ -50,11 +50,13 @@ class Query
 			return $result_cached;
 		}
 		
-		$rows = Db::getAll($this->compile(), $this->values_accum);
+		$rows = Db::getAll($sql, $this->values_accum);
 		$new_collection = Orm::collection($this->entity_name);
-		
+		$pk = isset($this->entity_info['primary_key']) ? $this->entity_info['primary_key'] : 'id';
+
 		foreach($rows as $row) {
-			$result[$row['id']] = $new_collection->create($row);
+			$pk_value = isset($row[$pk]) ? $row[$pk] : null;
+			$result[$pk_value] = $new_collection->create($row);
 		}
 		
 		if($this->use_cache) {
