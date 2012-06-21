@@ -132,7 +132,7 @@ class MenuItem implements ArrayAccess
 
 	public function __set($key, $val) 
 	{
-		if($name != 'children') {
+		if($key != 'children') {
 			$this->item[$key] = $val;
 		}
 	}
