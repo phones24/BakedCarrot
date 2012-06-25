@@ -9,9 +9,6 @@
  
 class Collection extends Query
 {
-	private $entity_info = null;
-
-
 	/**
 	 * Creates new collection that holds entities of $entity_name class
 	 *

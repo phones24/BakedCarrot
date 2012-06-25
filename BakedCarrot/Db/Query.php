@@ -11,6 +11,7 @@
 class Query
 {
 	protected $entity_name = Orm::ENTITY_BASE_CLASS;
+	protected $entity_info = null;
 	private $sql_accum = array();
 	private $values_accum = array();
 	private $use_cache = false;
