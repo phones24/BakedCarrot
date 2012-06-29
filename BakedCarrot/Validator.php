@@ -44,7 +44,7 @@ class Validator
 			$error = $this->getLastError();
 		}
 		
-		throw new BakedCarrotValidatorException($error);
+		throw new BakedCarrotValidatorException(isset($error['message']) ? $error['message'] : '');
 	}
 
 	
