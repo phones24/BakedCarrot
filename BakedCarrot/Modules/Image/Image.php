@@ -22,8 +22,8 @@ class Image extends ParamLoader
 	protected $image_file = null;
 	protected $image_info = null;
 	protected $format_supported = array();
-	protected $dir_mask = 0777;
-	protected $file_mask = 0665;
+	protected $dir_mask = 0775;
+	protected $file_mask = 0664;
 	protected $width;
 	protected $height;
 	protected $type;
@@ -128,7 +128,7 @@ class Image extends ParamLoader
 		$orig_file_info = pathinfo($dest);
 		
 		if(!is_dir($orig_file_info['dirname'])) {
-			if(!mkdir($orig_file_info['dirname'], $this->dir_mask, true)) {
+			if(!$this->mkdirr($orig_file_info['dirname'], $this->dir_mask)) {
 				throw new BakedCarrotImageException('Cannot create directory: ' . $orig_file_info['dirname']);
 			}
 		}
@@ -183,8 +183,8 @@ class Image extends ParamLoader
 			throw new BakedCarrotImageException('Invalid "base" parameter');
 		}
 		
-		$new_width = floor($this->width / $coef);
-		$new_height = floor($this->height / $coef);
+		$new_width = ceil($this->width / $coef);
+		$new_height = ceil($this->height / $coef);
 		
 		$im_new = $this->newImage($new_width, $new_height);
 		
@@ -338,7 +338,7 @@ class Image extends ParamLoader
 		$file_info = pathinfo($file);
 		
 		if(!is_dir($file_info['dirname'])) {
-			if(!mkdir($file_info['dirname'], $this->dir_mask, true)) {
+			if(!$this->mkdirr($file_info['dirname'], $this->dir_mask)) {
 				throw new BakedCarrotImageException('Cannot create directory: ' . $file_info['dirname']);
 			}
 		}
@@ -371,19 +371,17 @@ class Image extends ParamLoader
 			throw new BakedCarrotImageException('Cannot save file ' . $file);
 		}
 		
+		chmod($file, $this->file_mask);
+		
 		$this->mime = image_type_to_mime_type($this->type);
 		
 		return $this;
 	}
 	
 
-	public function alphaMask($mask) 
+	public function alphaMask(Image $mask) 
 	{
 		$new_img = $this->newImage($this->getWidth(), $this->getHeight());
-		
-		if(get_class($mask) != 'Image') {
-			throw new BakedCarrotImageException('Mask should be instance of Image module');
-		}
 		
 		// resize the mask if it's not the same size
 		if($mask->getWidth() != $this->getWidth() || $mask->getHeight() != $this->getHeight()) {
@@ -404,39 +402,6 @@ class Image extends ParamLoader
 		
 		imagecopy($this->getHandle(), $new_img, 0, 0, 0, 0, $this->getWidth(), $this->getHeight());
 		imagedestroy($new_img);
-		
-/*
-		// Get sizes and set up new picture
-		$xSize = imagesx( $picture );
-		$ySize = imagesy( $picture );
-		$newPicture = imagecreatetruecolor( $xSize, $ySize );
-		imagesavealpha( $newPicture, true );
-		imagefill( $newPicture, 0, 0, imagecolorallocatealpha( $newPicture, 0, 0, 0, 127 ) );
-
-		// Resize mask if necessary
-		if( $xSize != imagesx( $mask ) || $ySize != imagesy( $mask ) ) {
-			$tempPic = imagecreatetruecolor( $xSize, $ySize );
-			imagecopyresampled( $tempPic, $mask, 0, 0, 0, 0, $xSize, $ySize, imagesx( $mask ), imagesy( $mask ) );
-			imagedestroy( $mask );
-			$mask = $tempPic;
-		}
-
-		// Perform pixel-based alpha map application
-		for( $x = 0; $x < $xSize; $x++ ) {
-			for( $y = 0; $y < $ySize; $y++ ) {
-				$alpha = imagecolorsforindex( $mask, imagecolorat( $mask, $x, $y ) );
-				$alpha = 127 - floor( $alpha[ 'red' ] / 2 );
-				$color = imagecolorsforindex( $picture, imagecolorat( $picture, $x, $y ) );
-				imagesetpixel( $newPicture, $x, $y, imagecolorallocatealpha( $newPicture, $color[ 'red' ], $color[ 'green' ], $color[ 'blue' ], $alpha ) );
-			}
-		}
-
-		// Copy back to original picture
-		//imagedestroy( $picture );
-		//$picture = $newPicture;
-		imagecopy($picture, $newPicture, 0, 0, 0, 0, $xSize, $ySize);
-		//imagedestroy($newPicture);
-*/		
 	}
 
 	
@@ -547,5 +512,29 @@ class Image extends ParamLoader
 			throw new BakedCarrotImageException('No image loaded');
 		}
 	}
+	
+	
+	private function mkdirr($pathname, $mode = 0777)
+	{
+		if(empty($pathname)) {
+			return false;
+		}
+	 
+		if(@is_file($pathname)) {
+			return false;
+		}
+	 
+		$next_pathname = substr($pathname, 0, strrpos($pathname, DIRECTORY_SEPARATOR));
+		if($this->mkdirr($next_pathname, $mode)) {
+			if(!@file_exists($pathname)) {
+				if(@mkdir($pathname, $mode)) {
+					chmod($pathname, $mode);
+				}
+			}
+		}
+	 
+		return true;
+	}
+
 
 }
