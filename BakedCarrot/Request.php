@@ -101,19 +101,19 @@ class Request
 
 	public static function isHttps()
 	{
-		return (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off' );
+		return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' );
 	}
 	
 
 	public static function isAjax()
 	{
-		return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+		return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 	}
 	
 	
 	public static function isFlash()
 	{
-		return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'Shockwave Flash';
+		return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'Shockwave Flash';
 	}
 	
 	
