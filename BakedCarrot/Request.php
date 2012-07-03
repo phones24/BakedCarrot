@@ -101,7 +101,8 @@ class Request
 
 	public static function isHttps()
 	{
-		return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' );
+		return ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+			(!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'));
 	}
 	
 
