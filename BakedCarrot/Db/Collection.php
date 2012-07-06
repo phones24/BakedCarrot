@@ -122,11 +122,9 @@ class Collection extends Query
 		
 		if(is_array($data) && !empty($data)) {
 			$object->hydrate($data);
-			$object->trigger('onLoad');
 		}
-		else {
-			$object->trigger('onCreate');
-		}
+
+		$object->trigger('onLoad');
 		
 		return $object;
 	}
