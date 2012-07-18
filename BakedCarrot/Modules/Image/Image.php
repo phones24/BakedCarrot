@@ -162,7 +162,7 @@ class Image extends ParamLoader
 	}
 	
 	
-	public function resize($width, $height, $base = self::RESIZE_BASE_MAX, $resize_if_smaller = false)
+	public function resize($width, $height, $base = self::RESIZE_BASE_MAX, $resize_if_smaller = false, $return_new = false)
 	{
 		$this->checkHandle();
 
@@ -185,16 +185,21 @@ class Image extends ParamLoader
 		
 		$new_width = ceil($this->width / $coef);
 		$new_height = ceil($this->height / $coef);
+		$new_handle = $this->newImage($new_width, $new_height);
 		
-		$im_new = $this->newImage($new_width, $new_height);
-		
-		if(!imagecopyresampled($im_new, $this->handle, 0, 0, 0, 0, $new_width, $new_height, $this->width, $this->height)) {
+		if(!imagecopyresampled($new_handle, $this->handle, 0, 0, 0, 0, $new_width, $new_height, $this->width, $this->height)) {
 			throw new BakedCarrotImageException('Image resizing failed');
+		}
+		
+		if($return_new) {
+			 $new_im = new Image();
+			 $new_im->setHandle($new_handle);
+			 return $new_im;
 		}
 		
 		imagedestroy($this->handle);
 		
-		$this->handle = $im_new;
+		$this->handle = $new_handle;
 		$this->width = imagesx($this->handle); 
 		$this->height = imagesy($this->handle); 
 		
@@ -202,7 +207,7 @@ class Image extends ParamLoader
 	}
 	
 	
-	public function crop($width, $height, $base = self::CROP_BASE_TOPLEFT)
+	public function crop($width, $height, $base = self::CROP_BASE_TOPLEFT, $return_new = false)
 	{
 		$this->checkHandle();
 
@@ -210,31 +215,37 @@ class Image extends ParamLoader
 			return $this;
 		}
 		
-		$im_new = $this->newImage($width, $height);
+		$new_handle = $this->newImage($width, $height);
 		
 		$ret = false;
 		
 		if($base == self::CROP_BASE_TOPLEFT) {
-			$ret = imagecopy($im_new, $this->handle, 0, 0, 0, 0, $width, $height);
+			$ret = imagecopy($new_handle, $this->handle, 0, 0, 0, 0, $width, $height);
 		}
 		elseif($base == self::CROP_BASE_CENTER) {
 			$x = round(($this->width - $width) / 2);
 			$y = round(($this->height - $height) / 2);
-			$ret = imagecopy($im_new, $this->handle, 0, 0, $x, $y, $width, $height);
+			$ret = imagecopy($new_handle, $this->handle, 0, 0, $x, $y, $width, $height);
 		}
 		elseif($base == self::CROP_BASE_BOTTOMRIGHT) {
 			$x = $this->width - $width;
 			$y = $this->height - $height;
-			$ret = imagecopy($im_new, $this->handle, 0, 0, $x, $y, $width, $height);
+			$ret = imagecopy($new_handle, $this->handle, 0, 0, $x, $y, $width, $height);
 		}
 		
 		if(!$ret) {
 			throw new BakedCarrotImageException('Image cropping failed');
 		}
 		
+		if($return_new) {
+			 $new_im = new Image();
+			 $new_im->setHandle($new_handle);
+			 return $new_im;
+		}
+
 		imagedestroy($this->handle);
 		
-		$this->handle = $im_new;
+		$this->handle = $new_handle;
 		$this->width = imagesx($this->handle); 
 		$this->height = imagesy($this->handle); 
 
@@ -408,6 +419,20 @@ class Image extends ParamLoader
 	public function getHandle()
 	{
 		return $this->handle;
+	}
+
+
+	public function setHandle($handle)
+	{
+		if(!is_null($this->handle)) {
+			imagedestroy($this->handle);
+		}
+		
+		$this->handle = $handle;
+		$this->width = imagesx($this->handle); 
+		$this->height = imagesy($this->handle); 
+		$this->type = null;
+		$this->mime = null;
 	}
 
 
