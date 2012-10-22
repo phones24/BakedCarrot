@@ -378,9 +378,9 @@ class Query
 	 *
 	 * @return \Query
 	 */
-	public function cached()
+	public function cached($cached = true)
 	{
-		$this->use_cache = true;
+		$this->use_cache = $cached;
 		
 		return $this;
 	}

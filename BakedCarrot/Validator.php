@@ -16,7 +16,7 @@ class Validator
 	const RULE_ID = 5;
 	const RULE_EMAIL = 6;
 	const RULE_INT = 7;
-
+	
 	protected $errors = array();
 	private $exception_on_error = false;
 
