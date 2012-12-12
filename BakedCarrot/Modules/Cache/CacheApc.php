@@ -15,7 +15,9 @@ class CacheApc extends CacheDriver
 		}
 	}
 
-	
+	/**
+	 * Save data to the memory
+	 */
 	public function set($key, $value, $ttl)
 	{
 		if(!apc_store($key, $value, $ttl)) {
@@ -23,18 +25,25 @@ class CacheApc extends CacheDriver
 		}
 	}
 	
-	
+	/**
+	 * Get data from the memory
+	 */
 	public function get($key, $default)
 	{
+		$success = false;
 		$result = apc_fetch($key, $success);
 		
 		return $success ? $result : $default;
 	}
 
-	
+	/**
+	 * Remove data from the memory
+	 */
 	public function delete($key)
 	{
-		return apc_delete($key);
+		$success = false;
+		apc_fetch($key, $success);
+		return $success ? apc_delete($key) : true;
 	}
 	
 	
